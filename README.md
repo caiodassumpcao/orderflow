@@ -301,7 +301,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## 16. Roadmap
 
 - [x] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
-- [ ] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
+- [x] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
   - Endpoints de escrita incluídos nesta fase (criar, cancelar, enviar), com idempotência e Problem Details.
   - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
 - [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
