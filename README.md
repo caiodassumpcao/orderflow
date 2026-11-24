@@ -303,6 +303,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
   - Decidir se `/actuator/health/{liveness,readiness}` fica público fora do perfil `dev` (sem detalhes) e, se sim, adicionar `HEALTHCHECK` à imagem da API. Hoje o health exige token em produção.
   - Adicionar o OWASP Dependency-Check ao CI.
+  - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
 - [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
