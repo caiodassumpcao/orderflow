@@ -6,7 +6,7 @@ Plataforma de gestão de pedidos **event-driven** com **CQRS**, construída com 
 ![Coverage](https://img.shields.io/badge/coverage-TODO-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Java](https://img.shields.io/badge/Java-21-orange)
-![Angular](https://img.shields.io/badge/Angular-18+-red)
+![Angular](https://img.shields.io/badge/Angular-22-red)
 
 > **Demo:** _TODO (link do deploy ou GIF em `docs/media/demo.gif`)_
 
@@ -42,7 +42,7 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 | Competência | Evidência no projeto |
 |---|---|
 | Spring Boot | API REST, Spring Security, Spring Data JPA, Spring Kafka |
-| Angular 12+ e TypeScript | Angular 18+ standalone, TypeScript `strict`, RxJS, lazy loading |
+| Angular 12+ e TypeScript | Angular 22 standalone e zoneless, signals, TypeScript `strict`, RxJS, lazy loading |
 | Testes automatizados | Unitários, integração (Testcontainers), contrato e e2e |
 | SQL e performance | Índices, `EXPLAIN ANALYZE` antes/depois, migrations versionadas |
 | Mensageria (Kafka) | Outbox, consumers idempotentes, retry e DLQ |
@@ -56,8 +56,8 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Java 21, Spring Boot 3.x, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA, Spring Kafka, Flyway, MapStruct, springdoc-openapi |
-| Frontend | Angular 18+ (standalone, signals), TypeScript strict, RxJS, Angular Material/CDK, ESLint, Prettier |
+| Backend | Java 21, Spring Boot 4.x, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA, Spring Kafka, Flyway, MapStruct, springdoc-openapi |
+| Frontend | Angular 22 (standalone, signals, zoneless), TypeScript strict, RxJS, Angular Material/CDK, ESLint, Prettier |
 | Banco | PostgreSQL 16 (schemas `command` e `query`) |
 | Mensageria | Apache Kafka (KRaft) + Kafka UI (dev) |
 | Auth | Keycloak (OIDC/JWT) |
@@ -151,7 +151,7 @@ orderflow/
 │   ├── accessibility.md
 │   └── media/
 ├── .github/
-│   ├── workflows/{ci.yml,security.yml}
+│   ├── workflows/{ci.yml,codeql.yml}
 │   ├── dependabot.yml
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── ISSUE_TEMPLATE/
@@ -165,28 +165,28 @@ orderflow/
 
 ## 6. Como executar
 
-**Pré-requisitos:** Docker 24+, Docker Compose v2, Java 21, Node 20+, Make.
+**Pré-requisitos:** Docker 24+ com Compose v2, Java 21, Node 24, GNU Make (no Windows, rode pelo Git Bash ou instale o Make; as receitas usam `sh`).
 
 ```bash
 git clone https://github.com/caiodassumpcao/orderflow.git
 cd orderflow
 cp .env.example .env          # ajuste os valores locais
-make up                       # sobe Postgres, Kafka, Keycloak, Kafka UI, Prometheus e Grafana
-make backend-run              # API em http://localhost:8080
+make up                       # sobe Postgres, Kafka, Kafka UI e Keycloak e espera ficarem healthy
+make backend-run              # API em http://localhost:8080 (perfil dev)
+make frontend-install         # npm ci (primeira vez)
 make frontend-run             # SPA em http://localhost:4200
 ```
 
 | Serviço | URL |
 |---|---|
 | SPA | http://localhost:4200 |
-| API / Swagger UI | http://localhost:8080/swagger-ui.html |
+| API / Swagger UI (perfil dev) | http://localhost:8080/swagger-ui.html |
 | Keycloak | http://localhost:8180 |
 | Kafka UI | http://localhost:8081 |
-| Grafana | http://localhost:3000 |
 
-Subida completa em containers: `docker compose -f infra/docker-compose.yml --profile full up --build`.
+Prometheus e Grafana entram na Fase 9. As portas vêm do `.env`; se a 5432 já estiver ocupada, ajuste `POSTGRES_PORT`.
 
-**Comandos úteis (`make help`):** `test`, `test-integration`, `test-e2e`, `lint`, `format`, `migrate`, `down`, `clean`.
+**Comandos úteis (`make help`):** `test`, `test-e2e`, `lint`, `format`, `build`, `docker-build` (gera as imagens `orderflow-api` e `orderflow-web`), `down`, `clean`.
 
 > Usuários de demonstração (apenas dev) ficam em `infra/keycloak/realm-orderflow.json`. Nenhum segredo real é versionado.
 
@@ -276,9 +276,11 @@ Meta **WCAG 2.2 nível AA**.
 
 ## 14. CI/CD e DevOps
 
-Pipeline `ci.yml` (em todo PR): build → lint → testes unitários → testes de integração → cobertura → build das imagens Docker → e2e + acessibilidade.
-Pipeline `security.yml` (PR + agendado): CodeQL, Dependency-Check, Trivy, gitleaks.
-Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits).
+- **`ci.yml`** (PR e push em `main`/`develop`): backend (`mvnw verify`: testes unitários e de integração, ArchUnit, JaCoCo, Spotless, Checkstyle) → frontend (ESLint, Prettier, Jest com cobertura, build) → e2e Playwright + axe → build das imagens Docker com scan do Trivy. Um job de segurança roda gitleaks e Trivy no repositório (dependências, misconfig, segredos).
+- **`codeql.yml`** (PR, push e semanal): SAST de Java, TypeScript e Actions.
+- **Dependabot** semanal para actions, Maven, npm e imagens base.
+- Actions fixadas por SHA de commit; token do workflow somente leitura por padrão.
+- OWASP Dependency-Check entra na Fase 5. Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits), na Fase 9.
 
 ## 15. Git Flow e convenções
 
@@ -307,7 +309,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Registradas em `docs/adr/` (formato MADR). Iniciais:
 
-- ADR-0001: Monólito modular em vez de microsserviços
+- [ADR-0001](docs/adr/0001-modular-monolith.md): Monólito modular em vez de microsserviços
 - ADR-0002: CQRS com projeções por eventos
 - ADR-0003: Transactional Outbox em vez de dual-write
 - ADR-0004: Kafka (KRaft) como broker
