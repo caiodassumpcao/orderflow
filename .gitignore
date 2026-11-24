@@ -17,6 +17,8 @@ Thumbs.db
 *.swp
 
 # Backend (Maven)
+# wrapper gerado por extensões de IDE na raiz (o wrapper oficial fica em backend/)
+/.mvn/
 backend/target/
 !backend/.mvn/wrapper/maven-wrapper.properties
 backend/.mvn/wrapper/maven-wrapper.jar
