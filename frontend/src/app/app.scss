@@ -1,0 +1,42 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header,
+.app-footer {
+  padding: 1rem 1.5rem;
+  background: var(--of-surface-strong);
+  color: var(--of-on-surface-strong);
+}
+
+// Sobre o fundo escuro, o contorno de foco claro mantém contraste ≥ 3:1 (WCAG 1.4.11)
+.app-header :focus-visible,
+.app-footer :focus-visible {
+  outline-color: #ffb15c;
+}
+
+.brand {
+  color: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.app-main:focus {
+  outline: none;
+}
+
+.app-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+}
