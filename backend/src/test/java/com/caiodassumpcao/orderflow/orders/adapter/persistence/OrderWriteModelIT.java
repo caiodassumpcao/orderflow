@@ -184,6 +184,22 @@ class OrderWriteModelIT {
   }
 
   @Test
+  void numbersOutboxRowsInWriteOrder() {
+    CustomerId customer = newCustomer();
+    Order order = service.placeOrder(command(customer, "key-position-1")).order();
+    service.cancelOrder(order.id(), customer, null);
+
+    List<Long> positions =
+        jdbc.sql("SELECT position FROM command.outbox WHERE aggregate_id = ? ORDER BY position")
+            .param(order.id().value())
+            .query(Long.class)
+            .list();
+
+    assertThat(positions).hasSize(2).isSorted().doesNotHaveDuplicates();
+    assertThat(outboxTypes(order.id())).containsExactly("OrderCreated", "OrderCancelled");
+  }
+
+  @Test
   void rejectsAStaleUpdateWithAVersionConflict() {
     CustomerId customer = newCustomer();
     OrderId id = service.placeOrder(command(customer, "key-stale-1")).order().id();
@@ -245,7 +261,7 @@ class OrderWriteModelIT {
 
   private List<String> outboxTypes(OrderId id) {
     return jdbc.sql(
-            "SELECT event_type FROM command.outbox WHERE aggregate_id = ? ORDER BY created_at, id")
+            "SELECT event_type FROM command.outbox WHERE aggregate_id = ? ORDER BY position")
         .param(id.value())
         .query(String.class)
         .list();

@@ -214,7 +214,7 @@ Padrões: versionamento em URL, paginação por cursor/offset documentada, erros
 ## 8. Banco de dados e performance
 
 - Dois schemas: `command` (agregados + `outbox` + `processed_events`) e `query` (projeções).
-- Modelo de escrita atual (V2): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, índice parcial para eventos pendentes) e `command.idempotency_keys`. `processed_events` entra com os consumers na Fase 2.
+- Modelo de escrita atual (V2 e V3): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, `position` sequencial que define a ordem de publicação, índice parcial para eventos pendentes) e `command.idempotency_keys`. `processed_events` entra com os consumers na Fase 2.
 - Migrations Flyway imutáveis e versionadas.
 - Diagrama ER em `docs/db/er-diagram.md`.
 - **Estudo de performance** em `docs/db/performance.md`: massa de dados (≥ 1M pedidos), consultas lentas, `EXPLAIN (ANALYZE, BUFFERS)` antes e depois, índices compostos/parciais, paginação keyset.

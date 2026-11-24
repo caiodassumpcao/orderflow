@@ -30,13 +30,14 @@ Opção 2: **Transactional Outbox**.
 
 - O caso de uso grava o agregado, a chave de idempotência e as linhas de `command.outbox` numa única transação (`UnitOfWork`). Os adapters exigem uma transação em andamento (`Propagation.MANDATORY`), então nenhum deles grava fora dela por engano.
 - Cada linha tem o envelope do evento (`eventId` UUIDv7, tipo, versão, `aggregateId`, `occurredAt`, `correlationId`) e o payload versionado em `jsonb`. Os contratos estão em `docs/events/`.
-- Um índice parcial (`published_at IS NULL`) atende o relay, que entra na Fase 2: ele lê as linhas pendentes em ordem, publica com `aggregateId` como chave de partição e marca `published_at`.
+- Cada linha recebe uma `position` sequencial gerada pelo banco (`IDENTITY`). Nem `created_at` (o `now()` do PostgreSQL é o início da transação e pode empatar) nem o UUIDv7 (aleatório dentro do mesmo milissegundo) garantem ordem; para um mesmo pedido, `position` segue a ordem de commit, porque o controle otimista de versão impede duas transações concorrentes no mesmo agregado.
+- Um índice parcial em `position` (`published_at IS NULL`) atende o relay, que entra na Fase 2: ele lê as linhas pendentes em ordem de `position`, publica com `aggregateId` como chave de partição e marca `published_at`.
 
 ### Consequências
 
 - **Positivas:** atomicidade entre estado e evento garantida pelo próprio PostgreSQL; a API não depende da disponibilidade do Kafka; o histórico de eventos fica auditável no banco.
 - **Negativas:** a entrega é **at-least-once** (o relay pode publicar de novo se cair entre publicar e marcar), então os consumers precisam ser idempotentes pelo `eventId` (Fase 2); há latência entre o commit e a publicação; a tabela cresce e precisa de política de limpeza.
-- **Neutras:** a ordem por pedido depende de o relay publicar as linhas de um mesmo `aggregateId` em sequência.
+- **Neutras:** a ordem por pedido depende de o relay publicar as linhas de um mesmo `aggregateId` em ordem de `position`.
 
 ## Prós e contras das opções
 

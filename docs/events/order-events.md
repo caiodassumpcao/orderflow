@@ -28,6 +28,8 @@ Cada linha da outbox guarda os campos do envelope em colunas e o payload em `jso
 | `correlationId` | `correlation_id` | Id da requisição que originou o evento (pode ser nulo) |
 | `payload` | `payload` | Conteúdo específico do evento (abaixo) |
 
+A coluna `position` (sequencial, não publicada) define a ordem em que o relay publica os eventos.
+
 Valores monetários são **strings decimais com duas casas** (`"139.80"`), para não perder precisão em consumers que usam ponto flutuante.
 
 ## OrderCreated (v1)
