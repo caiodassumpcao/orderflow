@@ -1,0 +1,36 @@
+# Secrets / local env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Backend (Maven)
+backend/target/
+!backend/.mvn/wrapper/maven-wrapper.properties
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (Node / Angular / Playwright)
+node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+
+# Logs
+*.log
+npm-debug.log*
