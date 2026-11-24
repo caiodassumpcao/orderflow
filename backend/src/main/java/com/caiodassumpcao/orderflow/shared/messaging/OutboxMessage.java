@@ -8,6 +8,7 @@ import java.util.UUID;
  * Linha da outbox: os campos do envelope do evento e o payload em JSON.
  *
  * @param eventId id único do evento (UUIDv7), usado pelos consumers para deduplicar
+ * @param topic tópico Kafka de destino
  * @param aggregateType tipo do agregado (ex.: {@code Order})
  * @param aggregateId id do agregado; também é a chave de partição no Kafka
  * @param eventType nome do evento (ex.: {@code OrderCreated})
@@ -18,6 +19,7 @@ import java.util.UUID;
  */
 public record OutboxMessage(
     UUID eventId,
+    String topic,
     String aggregateType,
     UUID aggregateId,
     String eventType,
@@ -28,6 +30,7 @@ public record OutboxMessage(
 
   public OutboxMessage {
     Objects.requireNonNull(eventId);
+    Objects.requireNonNull(topic);
     Objects.requireNonNull(aggregateType);
     Objects.requireNonNull(aggregateId);
     Objects.requireNonNull(eventType);

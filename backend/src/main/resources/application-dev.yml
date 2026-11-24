@@ -20,6 +20,9 @@ springdoc:
     enabled: true
 
 orderflow:
+  messaging:
+    topics:
+      replication-factor: 1
   security:
     dev-endpoints-public: true
     cors:
