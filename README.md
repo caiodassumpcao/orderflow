@@ -56,7 +56,7 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Java 21 (Temurin), Spring Boot 4.1, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA (Hibernate 7), Spring Kafka (kafka-clients 4.2), Flyway 12, springdoc-openapi 3; MapStruct a partir da Fase 1 |
+| Backend | Java 21 (Temurin), Spring Boot 4.1, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA (Hibernate 7), Spring Kafka (kafka-clients 4.2), Flyway 12, springdoc-openapi 3 |
 | Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), TypeScript 6 strict, RxJS 7, Node 24; Angular Material/CDK a partir da Fase 6 |
 | Banco | PostgreSQL 16 (schemas `command` e `query`) |
 | Mensageria | Apache Kafka 4.4 (KRaft) + Kafka UI (dev) |
@@ -121,7 +121,7 @@ Envelope padrão do evento:
 }
 ```
 
-Tópicos: `order.events`, `inventory.events`, mais `*.retry.<n>` e `*.dlq`. Chave de partição: `aggregateId` (ordenação por pedido). Esquemas versionados em `docs/events/`.
+Tópicos: `order.events`, `inventory.events`, mais `*.retry.<n>` e `*.dlq`. Chave de partição: `aggregateId` (ordenação por pedido). Contratos versionados em [`docs/events/`](docs/events/order-events.md).
 
 ## 5. Estrutura do repositório
 
@@ -146,6 +146,7 @@ orderflow/
 ├── docs/
 │   ├── architecture.md
 │   ├── adr/                                    # decisões arquiteturais
+│   ├── api/problems.md                         # catálogo de erros (RFC 9457)
 │   ├── events/                                 # contratos dos eventos
 │   ├── db/{er-diagram.md,performance.md}
 │   ├── accessibility.md
@@ -192,7 +193,7 @@ Prometheus e Grafana entram na Fase 9. As portas vêm do `.env`; se a 5432 já e
 
 ## 7. API
 
-Documentação interativa em `/swagger-ui.html` e contrato em `docs/openapi.yaml` (gerado no build).
+Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (somente no perfil `dev`); a exportação para `docs/openapi.yaml` no build entra na Fase 7.
 
 | Método | Rota | Descrição | Papel |
 |---|---|---|---|
@@ -204,11 +205,16 @@ Documentação interativa em `/swagger-ui.html` e contrato em `docs/openapi.yaml
 | GET | `/api/v1/inventory/{sku}` | Consulta estoque | ADMIN |
 | GET | `/api/v1/dashboard/summary` | Métricas agregadas | ADMIN |
 
-Padrões: versionamento em URL, paginação por cursor/offset documentada, erros em **RFC 9457 (Problem Details)**, validação com Bean Validation, `Idempotency-Key` em comandos de criação.
+Implementados na Fase 1: os três `POST` (criar, cancelar, enviar). As consultas `GET` chegam com o modelo de leitura (Fase 3) e o controle por papel (`USER`/`ADMIN`) na Fase 5; hoje qualquer usuário autenticado pode enviar um pedido, e o cancelamento já é restrito ao dono.
+
+Padrões: versionamento em URL, paginação por cursor/offset documentada, erros em **RFC 9457 (Problem Details)** com catálogo em [`docs/api/problems.md`](docs/api/problems.md), validação com Bean Validation (o erro lista os campos inválidos), cliente sempre identificado pelo `sub` do token.
+
+**Idempotência na criação:** o header `Idempotency-Key` (8 a 128 caracteres) é obrigatório e vale por cliente. Repetir a mesma requisição devolve o pedido original com `201` e `Idempotency-Replayed: true`; reutilizar a chave com outro corpo devolve `422`. Requisições concorrentes com a mesma chave criam um único pedido.
 
 ## 8. Banco de dados e performance
 
 - Dois schemas: `command` (agregados + `outbox` + `processed_events`) e `query` (projeções).
+- Modelo de escrita atual (V2): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, índice parcial para eventos pendentes) e `command.idempotency_keys`. `processed_events` entra com os consumers na Fase 2.
 - Migrations Flyway imutáveis e versionadas.
 - Diagrama ER em `docs/db/er-diagram.md`.
 - **Estudo de performance** em `docs/db/performance.md`: massa de dados (≥ 1M pedidos), consultas lentas, `EXPLAIN (ANALYZE, BUFFERS)` antes e depois, índices compostos/parciais, paginação keyset.
@@ -296,17 +302,21 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 - [x] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
 - [ ] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
-  - O gate do JaCoCo (≥ 80% linhas, ≥ 70% branches em domínio e aplicação) passa a valer com as primeiras classes de domínio; hoje ele passa vazio.
+  - Endpoints de escrita incluídos nesta fase (criar, cancelar, enviar), com idempotência e Problem Details.
+  - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
 - [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
 - [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
+  - Decidir a fonte de verdade do preço (catálogo no inventário ou serviço próprio) e deixar de aceitar o preço unitário enviado pelo cliente.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
+  - Exigir o papel `ADMIN` em `POST /api/v1/orders/{id}/ship` (hoje basta estar autenticado).
   - Decidir se `/actuator/health/{liveness,readiness}` fica público fora do perfil `dev` (sem detalhes) e, se sim, adicionar `HEALTHCHECK` à imagem da API. Hoje o health exige token em produção.
   - Adicionar o OWASP Dependency-Check ao CI.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
 - [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
+  - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
 - [ ] **Fase 9 — Observabilidade e deploy:** métricas, Prometheus, Grafana, dashboards, deploy/demo
 - [ ] **Fase 10 — Validação de segurança e release:** revisão final antes da v1.0.0
   - Scans completos (CodeQL, Trivy, Dependency-Check, gitleaks, `npm audit`) sem HIGH/CRITICAL e com as moderadas tratadas ou justificadas.
@@ -322,7 +332,7 @@ Registradas em `docs/adr/` (formato MADR). Iniciais:
 
 - [ADR-0001](docs/adr/0001-modular-monolith.md): Monólito modular em vez de microsserviços
 - ADR-0002: CQRS com projeções por eventos
-- ADR-0003: Transactional Outbox em vez de dual-write
+- [ADR-0003](docs/adr/0003-transactional-outbox.md): Transactional Outbox em vez de dual-write
 - ADR-0004: Kafka (KRaft) como broker
 - ADR-0005: Keycloak para identidade
 - ADR-0006: Paginação keyset nas listagens grandes
