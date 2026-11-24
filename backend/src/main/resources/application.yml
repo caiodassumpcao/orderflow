@@ -1,0 +1,65 @@
+# Configuração base (produção). Sem valores default para credenciais ou endpoints:
+# a aplicação falha na subida se as variáveis de ambiente obrigatórias não existirem.
+spring:
+  application:
+    name: orderflow
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+orderflow:
+  security:
+    # Libera /actuator/health e Swagger sem autenticação. Ligado apenas no perfil dev.
+    dev-endpoints-public: false
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS}

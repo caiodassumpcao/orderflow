@@ -1,0 +1,26 @@
+# Perfil de desenvolvimento local (infra do `make up`).
+# Endpoints derivados das variáveis do `.env`; credenciais nunca têm valor literal aqui.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:${POSTGRES_PORT:5432}/${POSTGRES_DB:orderflow}}
+    username: ${DB_USERNAME:${POSTGRES_USER}}
+    password: ${DB_PASSWORD:${POSTGRES_PASSWORD}}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:${KAFKA_PORT:9092}}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:${KEYCLOAK_PORT:8180}/realms/orderflow}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+orderflow:
+  security:
+    dev-endpoints-public: true
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
