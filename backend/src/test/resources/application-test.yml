@@ -1,0 +1,17 @@
+# Perfil de testes. O datasource vem do Testcontainers (@ServiceConnection).
+spring:
+  kafka:
+    # Nenhum producer/consumer existe ainda; o endereço não é contatado nos testes.
+    bootstrap-servers: localhost:9092
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Resolvido de forma lazy; os testes usam tokens mockados (jwt() do spring-security-test).
+          issuer-uri: http://localhost:65535/realms/test
+
+orderflow:
+  security:
+    dev-endpoints-public: false
+    cors:
+      allowed-origins: http://localhost:4200

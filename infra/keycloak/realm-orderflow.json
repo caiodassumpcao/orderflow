@@ -1,0 +1,65 @@
+{
+  "realm": "orderflow",
+  "enabled": true,
+  "displayName": "OrderFlow (dev)",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "USER", "description": "Cliente: cria, consulta e cancela os próprios pedidos" },
+      { "name": "ADMIN", "description": "Operação: envio de pedidos, estoque e dashboard" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "orderflow-spa",
+      "name": "OrderFlow SPA",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "dev-user",
+      "email": "dev-user@orderflow.local",
+      "firstName": "Dev",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "${ORDERFLOW_DEV_USER_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["USER"]
+    },
+    {
+      "username": "dev-admin",
+      "email": "dev-admin@orderflow.local",
+      "firstName": "Dev",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "${ORDERFLOW_DEV_ADMIN_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["USER", "ADMIN"]
+    }
+  ]
+}

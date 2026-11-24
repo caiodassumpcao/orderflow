@@ -1,0 +1,11 @@
+#!/bin/sh
+# Rejeita mensagens de commit com atribuição a ferramentas de IA.
+# Ativação (uma vez por clone): git config core.hooksPath .githooks
+msg_file="$1"
+
+if grep -v '^#' "$msg_file" | grep -qiE 'co-authored-by|claude|anthropic|generated with'; then
+  echo "commit-msg: mensagem rejeitada." >&2
+  echo "Não use 'Co-Authored-By', 'Generated with' nem referências a Claude/Anthropic." >&2
+  exit 1
+fi
+exit 0

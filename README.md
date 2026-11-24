@@ -6,7 +6,7 @@ Plataforma de gestão de pedidos **event-driven** com **CQRS**, construída com 
 ![Coverage](https://img.shields.io/badge/coverage-TODO-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Java](https://img.shields.io/badge/Java-21-orange)
-![Angular](https://img.shields.io/badge/Angular-18+-red)
+![Angular](https://img.shields.io/badge/Angular-22-red)
 
 > **Demo:** _TODO (link do deploy ou GIF em `docs/media/demo.gif`)_
 
@@ -42,7 +42,7 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 | Competência | Evidência no projeto |
 |---|---|
 | Spring Boot | API REST, Spring Security, Spring Data JPA, Spring Kafka |
-| Angular 12+ e TypeScript | Angular 18+ standalone, TypeScript `strict`, RxJS, lazy loading |
+| Angular 12+ e TypeScript | Angular 22 standalone e zoneless, signals, TypeScript `strict`, RxJS, lazy loading |
 | Testes automatizados | Unitários, integração (Testcontainers), contrato e e2e |
 | SQL e performance | Índices, `EXPLAIN ANALYZE` antes/depois, migrations versionadas |
 | Mensageria (Kafka) | Outbox, consumers idempotentes, retry e DLQ |
@@ -56,15 +56,15 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Java 21, Spring Boot 3.x, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA, Spring Kafka, Flyway, MapStruct, springdoc-openapi |
-| Frontend | Angular 18+ (standalone, signals), TypeScript strict, RxJS, Angular Material/CDK, ESLint, Prettier |
+| Backend | Java 21 (Temurin), Spring Boot 4.1, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA (Hibernate 7), Spring Kafka (kafka-clients 4.2), Flyway 12, springdoc-openapi 3; MapStruct a partir da Fase 1 |
+| Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), TypeScript 6 strict, RxJS 7, Node 24; Angular Material/CDK a partir da Fase 6 |
 | Banco | PostgreSQL 16 (schemas `command` e `query`) |
-| Mensageria | Apache Kafka (KRaft) + Kafka UI (dev) |
-| Auth | Keycloak (OIDC/JWT) |
-| Testes | JUnit 5, Mockito, AssertJ, Testcontainers, ArchUnit, Jest, Playwright, axe-core |
-| Qualidade | Spotless/Checkstyle, JaCoCo, SonarCloud (opcional) |
-| Observabilidade | Spring Actuator, Micrometer, Prometheus, Grafana, logs JSON com correlation id |
-| DevOps | Docker (multi-stage), Docker Compose, GitHub Actions, Dependabot, Trivy, gitleaks, CodeQL, OWASP Dependency-Check |
+| Mensageria | Apache Kafka 4.4 (KRaft) + Kafka UI (dev) |
+| Auth | Keycloak 26 (OIDC/JWT) |
+| Testes | JUnit 6 (Jupiter), Mockito 5, AssertJ, Testcontainers 2, ArchUnit 1.5, Jest 30 (jest-preset-angular), Playwright 1.65, axe-core |
+| Qualidade | Spotless (google-java-format), Checkstyle, JaCoCo, ESLint 10 (angular-eslint, regras de acessibilidade), Prettier; SonarCloud opcional |
+| Observabilidade | Spring Actuator, Micrometer, logs JSON (ECS) com correlation id; Prometheus e Grafana na Fase 9 |
+| DevOps | Docker multi-stage (JRE Temurin e nginx sem root), Docker Compose, GitHub Actions, Dependabot, Trivy, gitleaks, CodeQL; OWASP Dependency-Check na Fase 5 |
 
 ## 3. Arquitetura
 
@@ -151,7 +151,7 @@ orderflow/
 │   ├── accessibility.md
 │   └── media/
 ├── .github/
-│   ├── workflows/{ci.yml,security.yml}
+│   ├── workflows/{ci.yml,codeql.yml}
 │   ├── dependabot.yml
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── ISSUE_TEMPLATE/
@@ -165,28 +165,28 @@ orderflow/
 
 ## 6. Como executar
 
-**Pré-requisitos:** Docker 24+, Docker Compose v2, Java 21, Node 20+, Make.
+**Pré-requisitos:** Docker 24+ com Compose v2, Java 21, Node 24, GNU Make (no Windows, rode pelo Git Bash ou instale o Make; as receitas usam `sh`).
 
 ```bash
 git clone https://github.com/caiodassumpcao/orderflow.git
 cd orderflow
 cp .env.example .env          # ajuste os valores locais
-make up                       # sobe Postgres, Kafka, Keycloak, Kafka UI, Prometheus e Grafana
-make backend-run              # API em http://localhost:8080
+make up                       # sobe Postgres, Kafka, Kafka UI e Keycloak e espera ficarem healthy
+make backend-run              # API em http://localhost:8080 (perfil dev)
+make frontend-install         # npm ci (primeira vez)
 make frontend-run             # SPA em http://localhost:4200
 ```
 
 | Serviço | URL |
 |---|---|
 | SPA | http://localhost:4200 |
-| API / Swagger UI | http://localhost:8080/swagger-ui.html |
+| API / Swagger UI (perfil dev) | http://localhost:8080/swagger-ui.html |
 | Keycloak | http://localhost:8180 |
 | Kafka UI | http://localhost:8081 |
-| Grafana | http://localhost:3000 |
 
-Subida completa em containers: `docker compose -f infra/docker-compose.yml --profile full up --build`.
+Prometheus e Grafana entram na Fase 9. As portas vêm do `.env`; se a 5432 já estiver ocupada, ajuste `POSTGRES_PORT`.
 
-**Comandos úteis (`make help`):** `test`, `test-integration`, `test-e2e`, `lint`, `format`, `migrate`, `down`, `clean`.
+**Comandos úteis (`make help`):** `test`, `test-e2e`, `lint`, `format`, `build`, `docker-build` (gera as imagens `orderflow-api` e `orderflow-web`), `down`, `clean`.
 
 > Usuários de demonstração (apenas dev) ficam em `infra/keycloak/realm-orderflow.json`. Nenhum segredo real é versionado.
 
@@ -234,11 +234,11 @@ Resultados (preencher com medições reais):
 
 | Nível | Ferramentas | Escopo |
 |---|---|---|
-| Unitário | JUnit 5, Mockito, AssertJ | Domínio e casos de uso |
+| Unitário | JUnit 6, Mockito, AssertJ | Domínio e casos de uso |
 | Arquitetura | ArchUnit | Dependências entre camadas e contextos |
 | Integração | Testcontainers (Postgres, Kafka) | Persistência, outbox, consumers, retry/DLQ |
 | API | `@WebMvcTest`, MockMvc, REST Assured | Contratos HTTP, segurança, erros |
-| Frontend unitário | Jest, Angular Testing Library | Componentes, serviços, guards |
+| Frontend unitário | Jest (jest-preset-angular), Angular Testing Library | Componentes, serviços, guards |
 | E2E | Playwright | Fluxos críticos com stack real |
 | Acessibilidade | axe-core (Playwright) | Páginas principais sem violações |
 
@@ -276,9 +276,11 @@ Meta **WCAG 2.2 nível AA**.
 
 ## 14. CI/CD e DevOps
 
-Pipeline `ci.yml` (em todo PR): build → lint → testes unitários → testes de integração → cobertura → build das imagens Docker → e2e + acessibilidade.
-Pipeline `security.yml` (PR + agendado): CodeQL, Dependency-Check, Trivy, gitleaks.
-Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits).
+- **`ci.yml`** (PR e push em `main`/`develop`): backend (`mvnw verify`: testes unitários e de integração, ArchUnit, JaCoCo, Spotless, Checkstyle) → frontend (ESLint, Prettier, Jest com cobertura, build) → e2e Playwright + axe → build das imagens Docker com scan do Trivy. Um job de segurança roda gitleaks e Trivy no repositório (dependências, misconfig, segredos).
+- **`codeql.yml`** (PR, push e semanal): SAST de Java, TypeScript e Actions.
+- **Dependabot** semanal para actions, Maven, npm e imagens base.
+- Actions fixadas por SHA de commit; token do workflow somente leitura por padrão.
+- OWASP Dependency-Check entra na Fase 5. Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits), na Fase 10.
 
 ## 15. Git Flow e convenções
 
@@ -294,20 +296,31 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 - [ ] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
 - [ ] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
+  - O gate do JaCoCo (≥ 80% linhas, ≥ 70% branches em domínio e aplicação) passa a valer com as primeiras classes de domínio; hoje ele passa vazio.
 - [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
 - [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
+  - Decidir se `/actuator/health/{liveness,readiness}` fica público fora do perfil `dev` (sem detalhes) e, se sim, adicionar `HEALTHCHECK` à imagem da API. Hoje o health exige token em produção.
+  - Adicionar o OWASP Dependency-Check ao CI.
+  - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
 - [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
-- [ ] **Fase 9 — Observabilidade e release:** métricas, dashboards, deploy/demo, v1.0.0
+- [ ] **Fase 9 — Observabilidade e deploy:** métricas, Prometheus, Grafana, dashboards, deploy/demo
+- [ ] **Fase 10 — Validação de segurança e release:** revisão final antes da v1.0.0
+  - Scans completos (CodeQL, Trivy, Dependency-Check, gitleaks, `npm audit`) sem HIGH/CRITICAL e com as moderadas tratadas ou justificadas.
+  - `npm audit`: 19 vulnerabilidades moderadas em dependências de desenvolvimento (`glob`/`minimatch` puxados pelo `test-exclude` do Jest). Atualizar quando o Jest publicar versão corrigida ou aplicar `overrides` no `package.json`.
+  - Remover os overrides de `lz4-java` e `snappy-java` no `backend/pom.xml` quando o Spring Boot gerenciar versões corrigidas.
+  - Voltar a imagem do nginx para a linha estável (1.30.7+ ou sucessora) quando houver imagem publicada; hoje usa a mainline 1.31.7 por causa de CVEs críticas na 1.30.6.
+  - Revisar CSP, headers e CORS de produção; revisão OWASP ASVS / Top 10; atualizar `SECURITY.md`.
+  - Tag `v1.0.0`, publicação das imagens e changelog.
 
 ## 17. Decisões arquiteturais (ADRs)
 
 Registradas em `docs/adr/` (formato MADR). Iniciais:
 
-- ADR-0001: Monólito modular em vez de microsserviços
+- [ADR-0001](docs/adr/0001-modular-monolith.md): Monólito modular em vez de microsserviços
 - ADR-0002: CQRS com projeções por eventos
 - ADR-0003: Transactional Outbox em vez de dual-write
 - ADR-0004: Kafka (KRaft) como broker
