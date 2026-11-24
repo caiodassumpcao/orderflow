@@ -21,7 +21,22 @@ class ArchitectureTest {
   }
 
   @ArchTest
+  void applicationIsFrameworkFree(JavaClasses classes) {
+    ArchitectureRules.APPLICATION_IS_FRAMEWORK_FREE.check(classes);
+  }
+
+  @ArchTest
   void applicationDoesNotDependOnAdapters(JavaClasses classes) {
     ArchitectureRules.APPLICATION_DOES_NOT_DEPEND_ON_ADAPTERS.check(classes);
+  }
+
+  @ArchTest
+  void ordersDoNotDependOnInventory(JavaClasses classes) {
+    ArchitectureRules.ORDERS_DO_NOT_DEPEND_ON_INVENTORY.check(classes);
+  }
+
+  @ArchTest
+  void inventoryDoesNotDependOnOrders(JavaClasses classes) {
+    ArchitectureRules.INVENTORY_DOES_NOT_DEPEND_ON_ORDERS.check(classes);
   }
 }
