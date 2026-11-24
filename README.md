@@ -294,7 +294,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## 16. Roadmap
 
-- [ ] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
+- [x] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
 - [ ] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
   - O gate do JaCoCo (≥ 80% linhas, ≥ 70% branches em domínio e aplicação) passa a valer com as primeiras classes de domínio; hoje ele passa vazio.
 - [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
