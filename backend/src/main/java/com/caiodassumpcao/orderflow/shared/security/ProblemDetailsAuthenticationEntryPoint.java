@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Responde 401 com o header {@code WWW-Authenticate: Bearer} (RFC 6750) e corpo RFC 9457,
- * delegando o corpo ao {@code @RestControllerAdvice} para manter um único formato de erro.
+ * Responde 401 com o header {@code WWW-Authenticate: Bearer} (RFC 6750) e corpo RFC 9457, delegando
+ * o corpo ao {@code @RestControllerAdvice} para manter um único formato de erro.
  */
 @Component
 public class ProblemDetailsAuthenticationEntryPoint implements AuthenticationEntryPoint {

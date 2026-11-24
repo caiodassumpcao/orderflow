@@ -17,8 +17,7 @@ final class ArchitectureRules {
           .resideInAPackage("..domain..")
           .should()
           .dependOnClassesThat()
-          .resideInAnyPackage(
-              "org.springframework..", "jakarta.persistence..", "org.hibernate..")
+          .resideInAnyPackage("org.springframework..", "jakarta.persistence..", "org.hibernate..")
           .as("domain must not depend on Spring, JPA or Hibernate")
           .allowEmptyShould(true);
 

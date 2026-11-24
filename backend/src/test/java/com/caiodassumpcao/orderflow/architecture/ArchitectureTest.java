@@ -1,9 +1,9 @@
 package com.caiodassumpcao.orderflow.architecture;
 
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.lang.ArchRule;
 
 @AnalyzeClasses(
     packages = "com.caiodassumpcao.orderflow",
@@ -11,13 +11,17 @@ import com.tngtech.archunit.lang.ArchRule;
 class ArchitectureTest {
 
   @ArchTest
-  static final ArchRule domainIsFrameworkFree = ArchitectureRules.DOMAIN_IS_FRAMEWORK_FREE;
+  void domainIsFrameworkFree(JavaClasses classes) {
+    ArchitectureRules.DOMAIN_IS_FRAMEWORK_FREE.check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domainDoesNotDependOnOuterLayers =
-      ArchitectureRules.DOMAIN_DOES_NOT_DEPEND_ON_OUTER_LAYERS;
+  void domainDoesNotDependOnOuterLayers(JavaClasses classes) {
+    ArchitectureRules.DOMAIN_DOES_NOT_DEPEND_ON_OUTER_LAYERS.check(classes);
+  }
 
   @ArchTest
-  static final ArchRule applicationDoesNotDependOnAdapters =
-      ArchitectureRules.APPLICATION_DOES_NOT_DEPEND_ON_ADAPTERS;
+  void applicationDoesNotDependOnAdapters(JavaClasses classes) {
+    ArchitectureRules.APPLICATION_DOES_NOT_DEPEND_ON_ADAPTERS.check(classes);
+  }
 }

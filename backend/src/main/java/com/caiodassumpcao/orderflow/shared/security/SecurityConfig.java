@@ -16,8 +16,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Segurança HTTP: API stateless protegida por JWT (OAuth2 Resource Server), CORS restrito e
- * headers de segurança. Tudo que não for explicitamente liberado exige autenticação.
+ * Segurança HTTP: API stateless protegida por JWT (OAuth2 Resource Server), CORS restrito e headers
+ * de segurança. Tudo que não for explicitamente liberado exige autenticação.
  */
 @Configuration
 public class SecurityConfig {
@@ -51,36 +51,32 @@ public class SecurityConfig {
     http.csrf(AbstractHttpConfigurer::disable) // stateless + bearer token: sem cookie de sessão
         .cors(Customizer.withDefaults())
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .headers(
-            headers ->
-                headers
-                    .contentSecurityPolicy(
-                        csp -> csp.policyDirectives(devEndpointsPublic ? DEV_CSP : API_CSP))
-                    .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
-                    .frameOptions(frame -> frame.deny())
-                    .httpStrictTransportSecurity(
-                        hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
-                    .addHeaderWriter(
-                        new StaticHeadersWriter(
-                            "Permissions-Policy", "camera=(), microphone=(), geolocation=()")))
-        .authorizeHttpRequests(
-            auth -> {
-              if (devEndpointsPublic) {
-                auth.requestMatchers(DEV_PUBLIC_ENDPOINTS).permitAll();
-              }
-              auth.requestMatchers("/api/**").authenticated().anyRequest().authenticated();
-            })
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .jwt(Customizer.withDefaults())
-                    .authenticationEntryPoint(authenticationEntryPoint)
-                    .accessDeniedHandler(accessDeniedHandler))
-        .exceptionHandling(
-            exceptions ->
-                exceptions
-                    .authenticationEntryPoint(authenticationEntryPoint)
-                    .accessDeniedHandler(accessDeniedHandler));
+        .headers(headers ->
+            headers
+                .contentSecurityPolicy(
+                    csp -> csp.policyDirectives(devEndpointsPublic ? DEV_CSP : API_CSP))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+                .frameOptions(frame -> frame.deny())
+                .httpStrictTransportSecurity(
+                    hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
+                .addHeaderWriter(
+                    new StaticHeadersWriter(
+                        "Permissions-Policy", "camera=(), microphone=(), geolocation=()")))
+        .authorizeHttpRequests(auth -> {
+          if (devEndpointsPublic) {
+            auth.requestMatchers(DEV_PUBLIC_ENDPOINTS).permitAll();
+          }
+          auth.requestMatchers("/api/**").authenticated().anyRequest().authenticated();
+        })
+        .oauth2ResourceServer(oauth2 ->
+            oauth2
+                .jwt(Customizer.withDefaults())
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler))
+        .exceptionHandling(exceptions ->
+            exceptions
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler));
     return http.build();
   }
 
