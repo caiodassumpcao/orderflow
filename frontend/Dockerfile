@@ -12,7 +12,12 @@ COPY . .
 RUN npm run build
 
 # --- runtime: nginx sem privilégios servindo apenas os arquivos estáticos ---
-FROM nginxinc/nginx-unprivileged:1.30.6-alpine
+# Mainline: a stable 1.30.6 tem CVEs críticas corrigidas só na 1.30.7, ainda sem imagem publicada
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine-slim
+
+# Aplica as correções de segurança do Alpine publicadas depois da imagem base
+USER root
+RUN apk upgrade --no-cache
 
 COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build --chown=nginx:nginx /workspace/dist/orderflow-web/browser/ /usr/share/nginx/html/
