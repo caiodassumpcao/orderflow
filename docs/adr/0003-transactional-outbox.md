@@ -31,7 +31,7 @@ Opção 2: **Transactional Outbox**.
 - O caso de uso grava o agregado, a chave de idempotência e as linhas de `command.outbox` numa única transação (`UnitOfWork`). Os adapters exigem uma transação em andamento (`Propagation.MANDATORY`), então nenhum deles grava fora dela por engano.
 - Cada linha tem o envelope do evento (`eventId` UUIDv7, tipo, versão, `aggregateId`, `occurredAt`, `correlationId`) e o payload versionado em `jsonb`. Os contratos estão em `docs/events/`.
 - Cada linha recebe uma `position` sequencial gerada pelo banco (`IDENTITY`). Nem `created_at` (o `now()` do PostgreSQL é o início da transação e pode empatar) nem o UUIDv7 (aleatório dentro do mesmo milissegundo) garantem ordem; para um mesmo pedido, `position` segue a ordem de commit, porque o controle otimista de versão impede duas transações concorrentes no mesmo agregado.
-- Um índice parcial em `position` (`published_at IS NULL`) atende o relay, que entra na Fase 2: ele lê as linhas pendentes em ordem de `position`, publica com `aggregateId` como chave de partição e marca `published_at`.
+- Um índice parcial em `position` (`published_at IS NULL`) atende o relay (`OutboxRelay`, Fase 2): ele lê as linhas pendentes em ordem de `position`, publica no tópico gravado na linha com `aggregateId` como chave e marca `published_at` só depois da confirmação do broker. Detalhes em `docs/messaging.md`.
 
 ### Consequências
 
