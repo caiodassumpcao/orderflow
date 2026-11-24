@@ -45,8 +45,9 @@ class SecurityIT {
 
   @Test
   void apiWithValidTokenPassesAuthentication() throws Exception {
-    // Ainda não há endpoints: com token válido a requisição chega ao MVC e vira 404.
-    mvc.perform(get("/api/v1/orders").with(jwt()).header("X-Correlation-Id", "test-corr-0001"))
+    // Com token válido a requisição passa pela segurança e chega ao MVC: rota inexistente vira 404.
+    mvc.perform(
+            get("/api/v1/does-not-exist").with(jwt()).header("X-Correlation-Id", "test-corr-0001"))
         .andExpect(status().isNotFound())
         .andExpect(header().string("Content-Type", MediaType.APPLICATION_PROBLEM_JSON_VALUE))
         .andExpect(header().string("X-Correlation-Id", "test-corr-0001"))
