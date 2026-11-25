@@ -7,7 +7,14 @@ const prettier = require('eslint-config-prettier');
 
 module.exports = defineConfig([
   {
-    ignores: ['dist/', 'coverage/', '.angular/', 'playwright-report/', 'playwright-report-stack/', 'test-results/'],
+    ignores: [
+      'dist/',
+      'coverage/',
+      '.angular/',
+      'playwright-report/',
+      'playwright-report-stack/',
+      'test-results/',
+    ],
   },
   {
     files: ['**/*.ts'],
