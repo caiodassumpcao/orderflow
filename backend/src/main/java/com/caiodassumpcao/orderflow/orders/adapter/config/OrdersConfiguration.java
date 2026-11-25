@@ -3,8 +3,12 @@ package com.caiodassumpcao.orderflow.orders.adapter.config;
 import com.caiodassumpcao.orderflow.orders.application.OrderCommandService;
 import com.caiodassumpcao.orderflow.orders.application.port.IdempotencyKeyStore;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderEventOutbox;
+import com.caiodassumpcao.orderflow.orders.application.port.OrderProjectionStore;
+import com.caiodassumpcao.orderflow.orders.application.port.OrderReadModel;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderRepository;
 import com.caiodassumpcao.orderflow.orders.application.port.UnitOfWork;
+import com.caiodassumpcao.orderflow.orders.application.projection.OrderProjectionService;
+import com.caiodassumpcao.orderflow.orders.application.query.OrderQueryService;
 import com.caiodassumpcao.orderflow.orders.domain.OrderId;
 import com.caiodassumpcao.orderflow.shared.id.UuidV7;
 import java.time.Clock;
@@ -29,5 +33,15 @@ public class OrdersConfiguration {
         unitOfWork,
         clock,
         () -> new OrderId(UuidV7.generate(clock)));
+  }
+
+  @Bean
+  OrderQueryService orderQueryService(OrderReadModel readModel) {
+    return new OrderQueryService(readModel);
+  }
+
+  @Bean
+  OrderProjectionService orderProjectionService(OrderProjectionStore store) {
+    return new OrderProjectionService(store);
   }
 }
