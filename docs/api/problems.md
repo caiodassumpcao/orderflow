@@ -1,6 +1,6 @@
 # Catálogo de erros da API
 
-Todos os erros seguem a **RFC 9457 (Problem Details)**, com `Content-Type: application/problem+json`. O campo `type` aponta para a seção correspondente deste documento. Erros genéricos do HTTP (401, 403, 404 de rota, 405, JSON malformado) usam `type: about:blank`.
+Todos os erros seguem a **RFC 9457 (Problem Details)**, com `Content-Type: application/problem+json`. O campo `type` aponta para a seção correspondente deste documento. Erros genéricos do HTTP (401 sem token ou com token inválido, 403 sem o papel exigido, 404 de rota, 405, JSON malformado) usam `type: about:blank`.
 
 Campos sempre presentes:
 
@@ -53,6 +53,10 @@ Corrija os campos e reenvie.
 ## order-state-conflict
 
 **409.** A operação não é permitida no estado atual do pedido (ex.: enviar um pedido ainda não confirmado, cancelar um pedido já enviado). O campo extra `currentStatus` traz o estado atual.
+
+## rate-limit-exceeded
+
+**429.** O usuário excedeu o limite de comandos (`POST`, `PUT`, `PATCH`, `DELETE`). O header `Retry-After` diz quantos segundos esperar. Consultas não são limitadas.
 
 ## stock-item-not-found
 
