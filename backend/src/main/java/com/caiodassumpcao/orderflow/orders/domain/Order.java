@@ -29,6 +29,11 @@ public final class Order {
   private final Money total;
   private final Instant createdAt;
   private final Long version;
+
+  /** Versão do agregado depois da próxima mudança; vai em cada evento registrado. */
+  private final long eventVersion;
+
+  private boolean changed;
   private OrderStatus status;
   private String cancellationReason;
   private Instant updatedAt;
@@ -52,12 +57,13 @@ public final class Order {
     this.createdAt = Objects.requireNonNull(createdAt, "created at is required");
     this.updatedAt = Objects.requireNonNull(updatedAt, "updated at is required");
     this.version = version;
+    this.eventVersion = version == null ? 0 : version + 1;
   }
 
   /** Cria um pedido novo no estado {@code CREATED} e registra {@link OrderCreated}. */
   public static Order place(OrderId id, CustomerId customerId, List<OrderLine> lines, Instant now) {
     Order order = new Order(id, customerId, lines, OrderStatus.CREATED, null, now, now, null);
-    order.pendingEvents.add(new OrderCreated(id, customerId, order.lines, order.total, now));
+    order.record(new OrderCreated(id, 0, customerId, order.lines, order.total, now));
     return order;
   }
 
@@ -83,14 +89,16 @@ public final class Order {
 
   public void confirm(Instant now) {
     requireStatus(OrderStatus.STOCK_RESERVED, "confirm");
+    requireUnchanged();
     transitionTo(OrderStatus.CONFIRMED, now);
-    pendingEvents.add(new OrderConfirmed(id, now));
+    record(new OrderConfirmed(id, eventVersion, now));
   }
 
   public void ship(Instant now) {
     requireStatus(OrderStatus.CONFIRMED, "ship");
+    requireUnchanged();
     transitionTo(OrderStatus.SHIPPED, now);
-    pendingEvents.add(new OrderShipped(id, now));
+    record(new OrderShipped(id, eventVersion, now));
   }
 
   /** Cancela o pedido; permitido apenas antes da confirmação. */
@@ -98,11 +106,12 @@ public final class Order {
     if (!status.isCancellable()) {
       throw new IllegalOrderStateException(status, "cancel");
     }
+    requireUnchanged();
     String normalized = normalizeReason(reason);
     OrderStatus previous = status;
     cancellationReason = normalized;
     transitionTo(OrderStatus.CANCELLED, now);
-    pendingEvents.add(new OrderCancelled(id, previous, normalized, now));
+    record(new OrderCancelled(id, eventVersion, previous, normalized, now));
   }
 
   public boolean isOwnedBy(CustomerId candidate) {
@@ -155,6 +164,23 @@ public final class Order {
   /** Versão de persistência (controle otimista); vazia para pedidos ainda não salvos. */
   public Optional<Long> version() {
     return Optional.ofNullable(version);
+  }
+
+  /**
+   * Cada evento leva a versão que o agregado terá depois de salvo. Duas mudanças com evento na
+   * mesma instância antes de salvar produziriam versões inconsistentes com a persistida; por isso
+   * uma instância carregada aceita uma única mudança com evento.
+   */
+  private void requireUnchanged() {
+    if (changed) {
+      throw new IllegalStateException(
+          "Order " + id + " already has an unsaved change; save and reload it first");
+    }
+  }
+
+  private void record(OrderEvent event) {
+    changed = true;
+    pendingEvents.add(event);
   }
 
   private void requireStatus(OrderStatus expected, String action) {

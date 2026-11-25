@@ -1,5 +1,7 @@
 package com.caiodassumpcao.orderflow.orders.adapter.web;
 
+import com.caiodassumpcao.orderflow.orders.application.query.OrderDetail;
+import com.caiodassumpcao.orderflow.orders.application.query.OrderSummary;
 import com.caiodassumpcao.orderflow.orders.domain.Order;
 import com.caiodassumpcao.orderflow.orders.domain.OrderLine;
 import java.math.BigDecimal;
@@ -7,7 +9,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Estado do pedido devolvido pelos comandos (modelo de escrita). */
+/**
+ * Estado completo do pedido: resposta dos comandos (modelo de escrita) e do detalhe (modelo de
+ * leitura), com o mesmo formato.
+ */
 record OrderResponse(
     UUID id,
     String status,
@@ -28,6 +33,21 @@ record OrderResponse(
         order.cancellationReason().orElse(null),
         order.createdAt(),
         order.updatedAt());
+  }
+
+  static OrderResponse of(OrderDetail detail) {
+    OrderSummary summary = detail.summary();
+    return new OrderResponse(
+        summary.id().value(),
+        summary.status().name(),
+        summary.currency().getCurrencyCode(),
+        summary.total(),
+        detail.items().stream()
+            .map(item -> new Item(item.sku(), item.quantity(), item.unitPrice(), item.total()))
+            .toList(),
+        detail.cancellationReason(),
+        summary.createdAt(),
+        summary.updatedAt());
   }
 
   /** Item do pedido. */

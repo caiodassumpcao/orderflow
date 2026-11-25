@@ -22,6 +22,7 @@ class EventEnvelopeCodecTest {
         "OrderCreated",
         1,
         UUID.randomUUID(),
+        3,
         Instant.parse("2026-11-24T12:00:00.123Z"),
         correlationId,
         json.readTree("{\"orderId\":\"x\",\"total\":\"10.00\"}"));
@@ -50,7 +51,14 @@ class EventEnvelopeCodecTest {
 
     assertThat(json.readTree(encoded).propertyNames())
         .containsExactly(
-            "eventId", "type", "version", "aggregateId", "occurredAt", "correlationId", "payload");
+            "eventId",
+            "type",
+            "version",
+            "aggregateId",
+            "aggregateVersion",
+            "occurredAt",
+            "correlationId",
+            "payload");
   }
 
   @ParameterizedTest
@@ -61,20 +69,32 @@ class EventEnvelopeCodecTest {
         "[]",
         "{\"type\":\"OrderCreated\"}",
         """
-        {"eventId":"not-a-uuid","type":"T","version":1,"aggregateId":"%s",
+        {"eventId":"not-a-uuid","type":"T","version":1,"aggregateId":"%s","aggregateVersion":0,
          "occurredAt":"2026-11-24T12:00:00Z","payload":{}}
         """,
         """
-        {"eventId":"%s","type":"T","version":0,"aggregateId":"%s",
+        {"eventId":"%s","type":"T","version":0,"aggregateId":"%s","aggregateVersion":0,
          "occurredAt":"2026-11-24T12:00:00Z","payload":{}}
         """,
         """
-        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s",
+        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s","aggregateVersion":0,
          "occurredAt":"yesterday","payload":{}}
         """,
         """
-        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s",
+        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s","aggregateVersion":0,
          "occurredAt":"2026-11-24T12:00:00Z","payload":"text"}
+        """,
+        """
+        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s",
+         "occurredAt":"2026-11-24T12:00:00Z","payload":{}}
+        """,
+        """
+        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s","aggregateVersion":-1,
+         "occurredAt":"2026-11-24T12:00:00Z","payload":{}}
+        """,
+        """
+        {"eventId":"%s","type":"T","version":1,"aggregateId":"%s","aggregateVersion":1.5,
+         "occurredAt":"2026-11-24T12:00:00Z","payload":{}}
         """
       })
   void rejectsAnythingThatIsNotAValidEnvelopeAsPoison(String message) {

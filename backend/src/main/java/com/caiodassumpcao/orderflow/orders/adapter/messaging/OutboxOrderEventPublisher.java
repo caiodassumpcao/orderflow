@@ -45,6 +45,7 @@ class OutboxOrderEventPublisher implements OrderEventOutbox {
               TOPIC,
               AGGREGATE_TYPE,
               event.orderId().value(),
+              event.aggregateVersion(),
               event.getClass().getSimpleName(),
               CONTRACT_VERSION,
               json.writeValueAsString(payload(event)),

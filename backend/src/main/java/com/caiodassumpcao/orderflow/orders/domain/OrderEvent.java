@@ -12,11 +12,15 @@ public sealed interface OrderEvent {
 
   OrderId orderId();
 
+  /** Versão do agregado depois deste evento (0 na criação); crescente por pedido. */
+  long aggregateVersion();
+
   Instant occurredAt();
 
   /** Pedido criado e aguardando reserva de estoque. */
   record OrderCreated(
       OrderId orderId,
+      long aggregateVersion,
       CustomerId customerId,
       List<OrderLine> lines,
       Money total,
@@ -33,7 +37,8 @@ public sealed interface OrderEvent {
   }
 
   /** Pedido confirmado depois da reserva de estoque. */
-  record OrderConfirmed(OrderId orderId, Instant occurredAt) implements OrderEvent {
+  record OrderConfirmed(OrderId orderId, long aggregateVersion, Instant occurredAt)
+      implements OrderEvent {
 
     public OrderConfirmed {
       Objects.requireNonNull(orderId);
@@ -42,7 +47,8 @@ public sealed interface OrderEvent {
   }
 
   /** Pedido enviado. */
-  record OrderShipped(OrderId orderId, Instant occurredAt) implements OrderEvent {
+  record OrderShipped(OrderId orderId, long aggregateVersion, Instant occurredAt)
+      implements OrderEvent {
 
     public OrderShipped {
       Objects.requireNonNull(orderId);
@@ -54,7 +60,11 @@ public sealed interface OrderEvent {
    * Pedido cancelado. {@code previousStatus} permite ao estoque saber se havia reserva a liberar.
    */
   record OrderCancelled(
-      OrderId orderId, OrderStatus previousStatus, String reason, Instant occurredAt)
+      OrderId orderId,
+      long aggregateVersion,
+      OrderStatus previousStatus,
+      String reason,
+      Instant occurredAt)
       implements OrderEvent {
 
     public OrderCancelled {

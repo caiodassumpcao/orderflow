@@ -196,7 +196,7 @@ class OrderCommandServiceTest {
           .isEqualTo(OrderStatus.CANCELLED);
       assertThat(ports.outbox.events())
           .containsExactly(
-              new OrderCancelled(order.id(), OrderStatus.CREATED, "changed my mind", NOW));
+              new OrderCancelled(order.id(), 1, OrderStatus.CREATED, "changed my mind", NOW));
     }
 
     @Test
@@ -260,7 +260,7 @@ class OrderCommandServiceTest {
       Order shipped = service.shipOrder(confirmed.id());
 
       assertThat(shipped.status()).isEqualTo(OrderStatus.SHIPPED);
-      assertThat(ports.outbox.events()).containsExactly(new OrderShipped(confirmed.id(), NOW));
+      assertThat(ports.outbox.events()).containsExactly(new OrderShipped(confirmed.id(), 3, NOW));
     }
 
     @Test
