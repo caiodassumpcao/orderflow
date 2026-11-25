@@ -11,6 +11,7 @@ import com.caiodassumpcao.orderflow.orders.domain.CustomerId;
 import com.caiodassumpcao.orderflow.orders.domain.Order;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,7 +41,13 @@ import tools.jackson.databind.json.JsonMapper;
  * Mensageria ponta a ponta com Kafka e PostgreSQL reais: relay da outbox e um consumer de teste
  * montado com a mesma receita dos consumers reais (retry, idempotência e DLQ).
  */
-@SpringBootTest(properties = "orderflow.messaging.relay.enabled=true")
+@SpringBootTest(
+    properties = {
+      "orderflow.messaging.relay.enabled=true",
+      // Isola o que o teste observa: sem a saga, nenhum evento extra é gerado para os pedidos.
+      "orderflow.messaging.consumers.inventory.enabled=false",
+      "orderflow.messaging.consumers.order-saga.enabled=false"
+    })
 @ActiveProfiles("test")
 @Import({TestcontainersConfiguration.class, MessagingIT.ProbeConsumer.class})
 class MessagingIT {
@@ -141,6 +148,7 @@ class MessagingIT {
     assertThat(probe.deliveries(key))
         .hasSize(3); // orderflow.messaging.retry.attempts no perfil test
     assertThat(probe.deadLetterTopics()).contains("order.events.probe.dlq");
+    assertThat(probe.deadLetterReason(key)).contains("simulated transient failure");
     assertThat(counter("orderflow.messaging.dead.letters")).isEqualTo(deadBefore + 1);
     assertThat(probe.handled(key)).isZero();
     assertThat(processedRows(message)).isZero();
@@ -217,6 +225,7 @@ class MessagingIT {
     private final Map<String, Integer> handled = new ConcurrentHashMap<>();
     private final Set<String> dead = ConcurrentHashMap.newKeySet();
     private final Set<String> deadTopics = ConcurrentHashMap.newKeySet();
+    private final Map<String, String> deadReasons = new ConcurrentHashMap<>();
 
     ProbeConsumer(IdempotentEventProcessor processor, DeadLetters deadLetters) {
       this.processor = processor;
@@ -244,9 +253,12 @@ class MessagingIT {
     @DltHandler
     void onDeadLetter(
         ConsumerRecord<String, String> record,
-        @Header(name = KafkaHeaders.DLT_EXCEPTION_MESSAGE, required = false) String reason) {
+        @Header(name = KafkaHeaders.EXCEPTION_MESSAGE, required = false) byte[] reason) {
       dead.add(record.key());
       deadTopics.add(record.topic());
+      if (reason != null) {
+        deadReasons.put(record.key(), new String(reason, StandardCharsets.UTF_8));
+      }
       deadLetters.record(NAME, record.topic(), record.key(), reason);
     }
 
@@ -268,6 +280,10 @@ class MessagingIT {
 
     Set<String> deadLetterTopics() {
       return Set.copyOf(deadTopics);
+    }
+
+    String deadLetterReason(String key) {
+      return deadReasons.get(key);
     }
   }
 }

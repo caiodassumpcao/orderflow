@@ -52,7 +52,10 @@ class OrderProjectionListener {
   @OrderflowRetryableTopic(
       retryTopicSuffix = ".order-projector.retry",
       dltTopicSuffix = ".order-projector.dlq")
-  @KafkaListener(topics = OrderTopics.ORDER_EVENTS, groupId = NAME)
+  @KafkaListener(
+      topics = OrderTopics.ORDER_EVENTS,
+      groupId = NAME,
+      autoStartup = "${orderflow.messaging.consumers.order-projector.enabled:true}")
   void onMessage(ConsumerRecord<String, String> record) {
     processor.process(NAME, record.value(), this::project);
   }
@@ -60,7 +63,7 @@ class OrderProjectionListener {
   @DltHandler
   void onDeadLetter(
       ConsumerRecord<String, String> record,
-      @Header(name = KafkaHeaders.DLT_EXCEPTION_MESSAGE, required = false) String reason) {
+      @Header(name = KafkaHeaders.EXCEPTION_MESSAGE, required = false) byte[] reason) {
     deadLetters.record(NAME, record.topic(), record.key(), reason);
   }
 
