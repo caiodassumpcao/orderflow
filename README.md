@@ -323,7 +323,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
   - Saga coreografada entre pedidos e inventário; o inventário é a fonte de verdade do preço e recusa pedidos com preço ou moeda diferentes do catálogo ([ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)).
   - Ainda não há endpoint para cadastrar produtos ou repor estoque (em dev há um estoque de demonstração); entra com as telas de administração (Fase 6), protegido pelo RBAC da Fase 5.
-- [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
+- [x] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
   - RBAC com os papéis do Keycloak em todos os endpoints, visão de administrador (`/api/v1/admin/orders`), validação do cliente do token (`azp`) e rate limit por usuário nos comandos.
   - Probes `liveness`/`readiness` públicos e sem detalhes; `HEALTHCHECK` na imagem da API.
   - OWASP Dependency-Check no CI (`dependency-check.yml`); requer o secret `NVD_API_KEY`.
