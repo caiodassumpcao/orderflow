@@ -13,6 +13,10 @@ test.describe('customer', () => {
     await api.install(context);
   });
 
+  test.afterEach(() => {
+    expect(api.contractViolations, 'API falsa fora do contrato (docs/openapi.yaml)').toEqual([]);
+  });
+
   test('signs in through PKCE and comes back to the page they asked for', async ({ page }) => {
     await page.goto('/pedidos');
 

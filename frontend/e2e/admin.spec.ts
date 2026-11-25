@@ -16,6 +16,10 @@ test.describe('operation', () => {
     await api.install(context);
   });
 
+  test.afterEach(() => {
+    expect(api.contractViolations, 'API falsa fora do contrato (docs/openapi.yaml)').toEqual([]);
+  });
+
   test('sees the dashboard with orders by status and per day', async ({ page }) => {
     await page.goto('/admin');
 

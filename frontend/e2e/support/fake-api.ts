@@ -1,4 +1,8 @@
 import { BrowserContext, Route } from '@playwright/test';
+import {
+  expectRequestToMatchContract,
+  expectResponseToMatchContract,
+} from '../../src/testing/openapi-contract';
 import { APP_ORIGIN } from './fake-idp';
 
 /**
@@ -70,6 +74,8 @@ export class FakeApi {
     },
   ];
   readonly orders: StoredOrder[] = [];
+  /** Respostas servidas ou corpos recebidos que fogem de docs/openapi.yaml (conferido após cada teste). */
+  readonly contractViolations: string[] = [];
   private readonly keys = new Map<string, string>();
   private sequence = 0;
 
@@ -116,6 +122,9 @@ export class FakeApi {
       return this.problem(route, 401, 'about:blank');
     }
     const body = request.postDataJSON?.() ?? null;
+    if (body !== null) {
+      this.verify(() => expectRequestToMatchContract(request.method(), path, body));
+    }
     const method = request.method();
     let match: RegExpMatchArray | null;
 
@@ -391,7 +400,24 @@ export class FakeApi {
   }
 
   private json(route: Route, status: number, body: unknown, headers: Record<string, string> = {}) {
+    const request = route.request();
+    this.verify(() =>
+      expectResponseToMatchContract(
+        request.method(),
+        new URL(request.url()).pathname,
+        status,
+        body,
+      ),
+    );
     return route.fulfill({ status, json: body, headers: this.cors(headers) });
+  }
+
+  private verify(check: () => void): void {
+    try {
+      check();
+    } catch (error) {
+      this.contractViolations.push((error as Error).message);
+    }
   }
 
   private problem(route: Route, status: number, type: string, extra: Record<string, unknown> = {}) {
