@@ -12,6 +12,8 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,
   reporter: isCI ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  // O dev server compila os chunks lazy na primeira visita; 5 s (padrão) fica justo em paralelo.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: externalBaseUrl ?? `http://localhost:${port}`,
     trace: 'on-first-retry',
