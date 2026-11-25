@@ -10,7 +10,8 @@
     "test:ci": "jest --ci --coverage",
     "lint": "eslint . && prettier --check .",
     "format": "eslint . --fix && prettier --write .",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:stack": "playwright test -c playwright.stack.config.ts"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

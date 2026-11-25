@@ -2,5 +2,6 @@ dist/
 coverage/
 .angular/
 playwright-report/
+playwright-report-stack/
 test-results/
 package-lock.json

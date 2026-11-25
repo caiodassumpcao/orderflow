@@ -30,6 +30,7 @@ frontend/.angular/
 frontend/coverage/
 frontend/test-results/
 frontend/playwright-report/
+frontend/playwright-report-stack/
 frontend/blob-report/
 frontend/playwright/.cache/
 
