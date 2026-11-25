@@ -360,7 +360,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Backend: catálogo para clientes, cadastro de produto e reposição com `If-Match` (V10: nome do produto) e `GET /api/v1/dashboard/summary`.
   - Imagem `orderflow-web` configurada em runtime (`config.json` e CSP gerados das variáveis `ORDERFLOW_*`).
   - E2E com provedor OIDC e API falsos e axe em todas as telas.
-- [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
+- [x] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
   - E2E na stack real no CI (job `e2e-stack`): login no Keycloak, compra confirmada pela saga e enviada, recusa por falta de estoque, cadastro e reposição de produto.
   - Contrato OpenAPI publicado em `docs/openapi.yaml` e verificado no build; SPA e API simulada validados contra ele. Contratos de eventos em JSON Schema, com testes de produtor e consumidor.
   - `docs/accessibility.md` com as verificações automáticas, o resultado do Lighthouse e o roteiro de teste manual com leitor de tela (execução manual, registrada no próprio documento).
