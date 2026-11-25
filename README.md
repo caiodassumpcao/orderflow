@@ -57,11 +57,11 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 | Camada | Tecnologia |
 |---|---|
 | Backend | Java 21 (Temurin), Spring Boot 4.1, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA (Hibernate 7), Spring Kafka (kafka-clients 4.2), Flyway 12, springdoc-openapi 3 |
-| Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), TypeScript 6 strict, RxJS 7, Node 24; Angular Material/CDK a partir da Fase 6 |
+| Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), Angular Material/CDK 22 (M3, temas claro e escuro), angular-auth-oidc-client 22 (OIDC + PKCE), TypeScript 6 strict, RxJS 7, Node 24 |
 | Banco | PostgreSQL 16 (schemas `command` e `query`) |
 | Mensageria | Apache Kafka 4.4 (KRaft) + Kafka UI (dev) |
 | Auth | Keycloak 26 (OIDC/JWT) |
-| Testes | JUnit 6 (Jupiter), Mockito 5, AssertJ, Testcontainers 2, ArchUnit 1.5, Jest 30 (jest-preset-angular), Playwright 1.65, axe-core |
+| Testes | JUnit 6 (Jupiter), Mockito 5, AssertJ, Testcontainers 2, ArchUnit 1.5, Jest 30 (jest-preset-angular), Angular Testing Library, Playwright 1.65, axe-core |
 | Qualidade | Spotless (google-java-format), Checkstyle, JaCoCo, ESLint 10 (angular-eslint, regras de acessibilidade), Prettier; SonarCloud opcional |
 | Observabilidade | Spring Actuator, Micrometer, logs JSON (ECS) com correlation id; Prometheus e Grafana na Fase 9 |
 | DevOps | Docker multi-stage (JRE Temurin e nginx sem root), Docker Compose, GitHub Actions, Dependabot, Trivy, gitleaks, CodeQL; OWASP Dependency-Check na Fase 5 |
@@ -130,14 +130,18 @@ orderflow/
 ├── backend/
 │   ├── src/main/java/com/caiodassumpcao/orderflow/
 │   │   ├── orders/{domain,application,adapter/{web,persistence,messaging}}
-│   │   ├── inventory/{domain,application,adapter/{persistence,messaging}}
+│   │   ├── inventory/{domain,application,adapter/{web,persistence,messaging}}
 │   │   └── shared/{config,security,messaging,error,observability}
 │   ├── src/main/resources/db/migration/        # Flyway
 │   ├── src/test/java/...                       # unit, integration, architecture
 │   └── pom.xml
 ├── frontend/
-│   ├── src/app/{core,shared,features/{orders,inventory,dashboard}}
-│   ├── e2e/                                    # Playwright
+│   ├── src/app/core/{api,auth,config,http}     # clientes da API, OIDC, config de runtime, erros
+│   ├── src/app/shared/                         # componentes e utilitários reutilizáveis
+│   ├── src/app/features/{home,orders,admin/{dashboard,inventory,...},forbidden}
+│   ├── public/config.json                      # config de runtime em dev
+│   ├── e2e/                                    # Playwright + axe, com IdP e API falsos
+│   ├── nginx.conf.template                     # nginx da imagem (CSP e config.json do ambiente)
 │   └── package.json
 ├── infra/
 │   ├── docker-compose.yml
@@ -190,7 +194,17 @@ Prometheus e Grafana entram na Fase 9. As portas vêm do `.env`; se a 5432 já e
 
 **Comandos úteis (`make help`):** `test`, `test-e2e`, `lint`, `format`, `build`, `docker-build` (gera as imagens `orderflow-api` e `orderflow-web`), `down`, `clean`.
 
-> Usuários de demonstração (apenas dev) ficam em `infra/keycloak/realm-orderflow.json`. Nenhum segredo real é versionado.
+> Usuários de demonstração (apenas dev) ficam em `infra/keycloak/realm-orderflow.json`: `dev-user` (cliente, papel `USER`) e `dev-admin` (operação, papéis `USER` e `ADMIN`), com as senhas definidas no `.env` (`ORDERFLOW_DEV_USER_PASSWORD`, `ORDERFLOW_DEV_ADMIN_PASSWORD`). Nenhum segredo real é versionado.
+
+**SPA:** a URL da API e o emissor OIDC são lidos de `/config.json` antes do bootstrap ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)). Em dev vêm de `frontend/public/config.json`; na imagem `orderflow-web`, o nginx gera o arquivo e a CSP (`connect-src`) a partir destas variáveis:
+
+| Variável | Padrão (ambiente local) |
+|---|---|
+| `ORDERFLOW_API_URL` | `http://localhost:8080` |
+| `ORDERFLOW_OIDC_AUTHORITY` | `http://localhost:8180/realms/orderflow` |
+| `ORDERFLOW_OIDC_CLIENT_ID` | `orderflow-spa` |
+
+Ex.: `docker run -p 127.0.0.1:4200:8080 orderflow-web:local` serve a imagem na mesma origem do dev server (a registrada no realm).
 
 ## 7. API
 
@@ -203,12 +217,16 @@ Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (so
 | POST | `/api/v1/orders/{id}/ship` | Marca como enviado | ADMIN |
 | GET | `/api/v1/orders` | Lista paginada, filtros e ordenação | USER |
 | GET | `/api/v1/orders/{id}` | Detalhe do pedido | USER |
-| GET | `/api/v1/inventory/{sku}` | Consulta estoque | ADMIN |
+| GET | `/api/v1/catalog` | Produtos à venda: nome, preço de catálogo e se há estoque | USER |
+| GET | `/api/v1/inventory` | Produtos com preço e quantidades, paginado por SKU | ADMIN |
+| GET | `/api/v1/inventory/{sku}` | Consulta estoque (com `ETag`) | ADMIN |
+| POST | `/api/v1/inventory` | Cadastra produto | ADMIN |
+| POST | `/api/v1/inventory/{sku}/restock` | Repõe estoque (`If-Match` obrigatório) | ADMIN |
 | GET | `/api/v1/admin/orders` | Todos os pedidos, com o cliente; filtros por cliente e status | ADMIN |
 | GET | `/api/v1/admin/orders/{id}` | Detalhe de qualquer pedido, com o cliente | ADMIN |
-| GET | `/api/v1/dashboard/summary` | Métricas agregadas | ADMIN |
+| GET | `/api/v1/dashboard/summary` | Pedidos por status, receita confirmada e pedidos por dia | ADMIN |
 
-Implementados todos os endpoints da tabela, exceto o dashboard (Fase 6). A coluna **Papel** é exigida pela API (Fase 5): cada endpoint declara o papel com `@PreAuthorize` e um token sem o papel recebe 403. Cancelamento e consultas de pedidos de `USER` são restritos ao dono; outro cliente recebe 404. Comandos (`POST`) são limitados por usuário: rajada de 30, repostos em 1 minuto; acima disso, 429 com `Retry-After`.
+Todos os endpoints da tabela estão implementados. A coluna **Papel** é exigida pela API (Fase 5): cada endpoint declara o papel com `@PreAuthorize` e um token sem o papel recebe 403. Cancelamento e consultas de pedidos de `USER` são restritos ao dono; outro cliente recebe 404. Comandos (`POST`) são limitados por usuário: rajada de 30, repostos em 1 minuto; acima disso, 429 com `Retry-After`.
 
 **Ciclo do pedido (saga, [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)):** o `POST` responde `CREATED`; em seguida o inventário reserva o estoque e o pedido vira `CONFIRMED`, ou o recusa (sem estoque, SKU inexistente ou preço/moeda diferente do catálogo) e o pedido vira `CANCELLED` com o motivo em `cancellationReason`. Só pedidos `CONFIRMED` podem ser enviados; o cancelamento pelo cliente vale enquanto o pedido está `CREATED`.
 
@@ -216,13 +234,17 @@ Implementados todos os endpoints da tabela, exceto o dashboard (Fase 6). A colun
 
 Padrões: versionamento em URL, paginação por cursor/offset documentada, erros em **RFC 9457 (Problem Details)** com catálogo em [`docs/api/problems.md`](docs/api/problems.md), validação com Bean Validation (o erro lista os campos inválidos), cliente sempre identificado pelo `sub` do token.
 
+**Catálogo e estoque:** o cliente monta o pedido a partir de `GET /api/v1/catalog`, que mostra o preço exigido pelo inventário e só diz se há estoque (as quantidades ficam na visão de operação). Listagens de produtos usam paginação keyset pelo SKU (`limit` de 1 a 100, `cursor` = `nextCursor`). A reposição usa **concorrência otimista**: o `ETag` do produto é a versão dele, e `POST .../restock` exige `If-Match` com esse valor. Se o produto mudou (outra reposição ou reservas de pedidos), a resposta é `412` com o `ETag` atual; sem o header, `428`. Assim um reenvio da mesma requisição nunca repõe o estoque duas vezes.
+
+**Dashboard:** `GET /api/v1/dashboard/summary?days=7&timeZone=America/Sao_Paulo` agrega o modelo de leitura: pedidos por status, receita confirmada (pedidos `CONFIRMED` e `SHIPPED`) por moeda e pedidos criados por dia, separados no fuso pedido, sem lacunas.
+
 **Idempotência na criação:** o header `Idempotency-Key` (8 a 128 caracteres) é obrigatório e vale por cliente. Repetir a mesma requisição devolve o pedido original com `201` e `Idempotency-Replayed: true`; reutilizar a chave com outro corpo devolve `422`. Requisições concorrentes com a mesma chave criam um único pedido.
 
 ## 8. Banco de dados e performance
 
 - Dois schemas: `command` (agregados + `outbox` + `processed_events`) e `query` (projeções).
 - Modelo de escrita atual (V2 e V3): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, `position` sequencial que define a ordem de publicação, índice parcial para eventos pendentes) e `command.idempotency_keys`; `aggregate_version` na outbox (V5) e `command.processed_events` (V4).
-- Inventário (V7): `command.stock_items` (preço de catálogo, unidades livres e reservadas), `command.stock_reservations` e itens. A V8 torna a versão da outbox única por tipo de agregado. Em dev, um estoque de demonstração (`SKU-001` a `SKU-005`) é carregado de `db/dev-data`.
+- Inventário (V7): `command.stock_items` (preço de catálogo, unidades livres e reservadas), `command.stock_reservations` e itens. A V8 torna a versão da outbox única por tipo de agregado e a V10 adiciona o nome do produto. Em dev, um estoque de demonstração (`SKU-001` a `SKU-005`, com nomes) é carregado de `db/dev-data`.
 - Modelo de leitura (V6): `query.order_summaries` e `query.order_items`, mantidos pelo projector; índice `(customer_id, created_at DESC, order_id DESC)` para a paginação keyset.
 - Migrations Flyway imutáveis e versionadas.
 - Diagrama ER em `docs/db/er-diagram.md`.
@@ -254,9 +276,9 @@ Resultados (preencher com medições reais):
 | Arquitetura | ArchUnit | Dependências entre camadas e contextos |
 | Integração | Testcontainers (Postgres, Kafka) | Persistência, outbox, consumers, retry/DLQ |
 | API | `@WebMvcTest`, MockMvc, REST Assured | Contratos HTTP, segurança, erros |
-| Frontend unitário | Jest (jest-preset-angular), Angular Testing Library | Componentes, serviços, guards |
-| E2E | Playwright | Fluxos críticos com stack real |
-| Acessibilidade | axe-core (Playwright) | Páginas principais sem violações |
+| Frontend unitário | Jest (jest-preset-angular), Angular Testing Library | Componentes, serviços, guards, interceptação de erros |
+| E2E | Playwright | Fluxos críticos de cliente e operação, com provedor OIDC e API falsos (login PKCE completo, tokens RS256); contra a stack real na Fase 7 |
+| Acessibilidade | axe-core (Playwright) | Todas as telas e diálogos, nos temas claro e escuro, sem violações WCAG 2.2 AA |
 
 Metas: cobertura backend ≥ 80% (linhas) e ≥ 70% (branches) no domínio e aplicação, frontend ≥ 80%; CI falha abaixo disso. Execução: `make test`.
 
@@ -269,12 +291,14 @@ Meta **WCAG 2.2 nível AA**.
 - Formulários com `label`, mensagens de erro associadas (`aria-describedby`) e `aria-live` para feedback.
 - Contraste mínimo 4.5:1, suporte a `prefers-reduced-motion` e zoom de 200%.
 - Tabelas com `caption`/`scope`; status nunca comunicado só por cor.
+- Numa SPA a página não recarrega: a cada navegação o foco vai para o conteúdo principal e o título da aba muda; diálogos de confirmação prendem o foco e o devolvem ao botão de origem; o andamento da saga de estoque é anunciado numa região `role="status"`.
 - Auditoria com axe + Lighthouse no CI; relatório e score em `docs/accessibility.md`.
 - Teste manual com NVDA ou VoiceOver documentado.
 
 ## 12. Segurança
 
 - **AuthN/AuthZ** ([ADR-0005](docs/adr/0005-keycloak-identity.md)): OIDC via Keycloak (Authorization Code + PKCE na SPA). O JWT é validado no backend (assinatura, expiração, emissor e cliente autorizado `azp`). RBAC com os papéis do realm (`USER`, `ADMIN`) declarados em cada endpoint com `@PreAuthorize`; uma regra do ArchUnit falha o build para endpoints sem papel. A propriedade do recurso é verificada nos casos de uso.
+- **SPA** ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)): cliente público com PKCE S256, tokens no `sessionStorage`, renovação por refresh token (sem iframe), token anexado só às chamadas da API; CSP da imagem com `script-src 'self'` e `connect-src` restrito à API e ao realm.
 - **Validação** de entrada em todas as bordas; sem SQL dinâmico concatenado.
 - **Headers:** CSP, HSTS, X-Content-Type-Options, Referrer-Policy; CORS restrito por ambiente.
 - **Segredos** via variáveis de ambiente; `.env.example` sem valores reais; scan com gitleaks.
@@ -329,9 +353,16 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - OWASP Dependency-Check no CI (`dependency-check.yml`); requer o secret `NVD_API_KEY`.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
 - [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
+  - Login OIDC com PKCE na SPA ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)); telas do cliente (pedidos, criação com preço de catálogo, detalhe que acompanha a saga e tolera o atraso da projeção, cancelamento) e da operação (painel, todos os pedidos com envio, estoque com cadastro e reposição).
+  - Backend: catálogo para clientes, cadastro de produto e reposição com `If-Match` (V10: nome do produto) e `GET /api/v1/dashboard/summary`.
+  - Imagem `orderflow-web` configurada em runtime (`config.json` e CSP gerados das variáveis `ORDERFLOW_*`).
+  - E2E com provedor OIDC e API falsos e axe em todas as telas; os e2e contra a stack real (Keycloak + API) ficam para a Fase 7.
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
+  - E2E contra a stack real (Keycloak, API, Kafka) no CI, além dos e2e com IdP e API falsos.
+  - Mensagem na tela quando o provedor OIDC estiver fora do ar (hoje o botão Entrar só registra o erro no console).
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
   - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
+  - O dashboard agrega `query.order_summaries` a cada requisição; medir e, se preciso, trocar por uma projeção agregada.
 - [ ] **Fase 9 — Observabilidade e deploy:** métricas, Prometheus, Grafana, dashboards, deploy/demo
   - Alertas sobre `orderflow.messaging.dead.letters` e o crescimento de `orderflow.outbox.pending`; ferramenta para reprocessar DLQs.
 - [ ] **Fase 10 — Validação de segurança e release:** revisão final antes da v1.0.0
@@ -339,7 +370,8 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - `npm audit`: 19 vulnerabilidades moderadas em dependências de desenvolvimento (`glob`/`minimatch` puxados pelo `test-exclude` do Jest). Atualizar quando o Jest publicar versão corrigida ou aplicar `overrides` no `package.json`.
   - Remover os overrides de `lz4-java` e `snappy-java` no `backend/pom.xml` quando o Spring Boot gerenciar versões corrigidas.
   - Voltar a imagem do nginx para a linha estável (1.30.7+ ou sucessora) quando houver imagem publicada; hoje usa a mainline 1.31.7 por causa de CVEs críticas na 1.30.6.
-  - Revisar CSP, headers e CORS de produção; revisão OWASP ASVS / Top 10; atualizar `SECURITY.md`.
+  - Revisar CSP, headers e CORS de produção (a CSP da SPA ainda tem `style-src 'unsafe-inline'` para os estilos que o Angular injeta); revisão OWASP ASVS / Top 10; atualizar `SECURITY.md`.
+  - Reavaliar tokens no `sessionStorage` da SPA contra um BFF com cookie `HttpOnly` ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)).
   - Rate limit distribuído (ex.: Redis) se a API rodar com mais de uma instância; o atual vale por instância.
   - Tag `v1.0.0`, publicação das imagens e changelog.
 
@@ -355,6 +387,7 @@ Registradas em `docs/adr/` (formato MADR). Iniciais:
 - [ADR-0006](docs/adr/0006-keyset-pagination.md): Paginação keyset nas listagens grandes
 - [ADR-0007](docs/adr/0007-non-blocking-retry.md): Retry não bloqueante por consumer, com DLQ
 - [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md): Saga coreografada de estoque, com o preço validado pelo inventário
+- [ADR-0009](docs/adr/0009-spa-oidc-pkce.md): Login OIDC na própria SPA, com PKCE (sem BFF)
 
 ## 18. Definition of Done
 
