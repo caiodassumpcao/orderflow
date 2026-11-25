@@ -27,7 +27,7 @@ describe('Inventory', () => {
     const row = (await screen.findByRole('rowheader', { name: 'Adesivos' })).closest(
       'tr',
     ) as HTMLElement;
-    expect(within(row).getByText('(esgotado)')).toBeInTheDocument();
+    expect(within(row).getByText('Esgotado')).toBeInTheDocument();
     expect(screen.getAllByText(/R\$\s*19,90/)).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));

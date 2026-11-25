@@ -1,62 +1,77 @@
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
 <header class="app-header">
-  <a class="brand" routerLink="/">{{ appName }}</a>
-
-  @if (auth.isAuthenticated()) {
-    <nav class="app-nav" aria-label="Principal">
-      <ul>
-        @if (auth.isCustomer()) {
-          <li>
-            <a
-              routerLink="/pedidos"
-              routerLinkActive="active"
-              ariaCurrentWhenActive="page"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Meus pedidos</a
-            >
-          </li>
-          <li>
-            <a routerLink="/pedidos/novo" routerLinkActive="active" ariaCurrentWhenActive="page"
-              >Novo pedido</a
-            >
-          </li>
-        }
-        @if (auth.isAdmin()) {
-          <li>
-            <a
-              routerLink="/admin"
-              routerLinkActive="active"
-              ariaCurrentWhenActive="page"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Painel</a
-            >
-          </li>
-          <li>
-            <a routerLink="/admin/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page"
-              >Todos os pedidos</a
-            >
-          </li>
-          <li>
-            <a routerLink="/admin/estoque" routerLinkActive="active" ariaCurrentWhenActive="page"
-              >Estoque</a
-            >
-          </li>
-        }
-      </ul>
-    </nav>
-
-    <div class="session">
-      @if (auth.displayName()) {
-        <span class="user-name">{{ auth.displayName() }}</span>
+  <div class="header-inner">
+    <a class="brand" routerLink="/">
+      <svg class="logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" class="logo-tile" />
+        <path d="M8 11h9a4 4 0 0 1 0 8h-2" class="logo-front" />
+        <path d="M24 21h-9a4 4 0 0 1 0-8h2" class="logo-back" />
+      </svg>
+      <span class="brand-name">{{ appName }}</span>
+      @if (auth.isAdmin()) {
+        <span class="brand-badge">Operação</span>
       }
-      <button type="button" class="session-button outlined" (click)="auth.logout()">Sair</button>
-    </div>
-  } @else {
-    <div class="session">
-      <button type="button" class="session-button filled" (click)="auth.login()">Entrar</button>
-    </div>
-  }
+    </a>
+
+    @if (auth.isAuthenticated()) {
+      <nav class="app-nav" aria-label="Principal">
+        <ul>
+          @if (auth.isCustomer()) {
+            <li>
+              <a
+                routerLink="/pedidos"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Meus pedidos</a
+              >
+            </li>
+            <li>
+              <a routerLink="/pedidos/novo" routerLinkActive="active" ariaCurrentWhenActive="page"
+                >Novo pedido</a
+              >
+            </li>
+          }
+          @if (auth.isAdmin()) {
+            <li>
+              <a
+                routerLink="/admin"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Painel</a
+              >
+            </li>
+            <li>
+              <a routerLink="/admin/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page"
+                >Todos os pedidos</a
+              >
+            </li>
+            <li>
+              <a routerLink="/admin/estoque" routerLinkActive="active" ariaCurrentWhenActive="page"
+                >Estoque</a
+              >
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="session">
+        @if (auth.displayName()) {
+          <span class="user">
+            <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+            <span class="user-name">{{ auth.displayName() }}</span>
+          </span>
+        }
+        <button type="button" class="session-button outlined" (click)="auth.logout()">Sair</button>
+      </div>
+    } @else {
+      <div class="session">
+        <button type="button" class="session-button filled" (click)="auth.login()">Entrar</button>
+      </div>
+    }
+  </div>
 </header>
 
 @if (auth.loginUnavailable()) {
@@ -71,5 +86,5 @@
 </main>
 
 <footer class="app-footer">
-  <p>© {{ year }} {{ appName }}</p>
+  <p>© {{ year }} {{ appName }} · gestão de pedidos orientada a eventos</p>
 </footer>

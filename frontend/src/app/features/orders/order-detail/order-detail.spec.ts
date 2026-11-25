@@ -69,7 +69,7 @@ describe('OrderDetail', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Pedido não encontrado');
     // Ainda tenta de novo: a projeção pode estar atrasada.
     (await nextPoll()).flush(anOrder({ status: 'SHIPPED' }));
-    expect(await screen.findByText('Enviado')).toBeInTheDocument();
+    expect(await screen.findByText('Enviado', { selector: '.badge' })).toBeInTheDocument();
   });
 
   it('cancels the order after confirmation, sending the optional reason', async () => {

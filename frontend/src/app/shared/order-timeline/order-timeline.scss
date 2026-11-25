@@ -1,0 +1,90 @@
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--of-border-strong);
+  border-radius: 50%;
+  background: var(--of-surface);
+
+  svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.line {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--of-border);
+}
+
+.label,
+.when {
+  margin: 0;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.when {
+  font-size: 0.875rem;
+  color: var(--of-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.done,
+.current {
+  .marker {
+    border-color: var(--of-primary);
+    background: var(--of-primary);
+    color: var(--of-on-primary);
+  }
+}
+
+.done .line {
+  background: var(--of-primary);
+}
+
+.current .marker {
+  box-shadow: 0 0 0 4px var(--of-primary-soft);
+}
+
+.todo .label {
+  color: var(--of-ink-2);
+}
+
+.cancelled .marker {
+  border-color: var(--of-status-cancelled-dot);
+  background: var(--of-status-cancelled-dot);
+  color: var(--of-surface);
+}

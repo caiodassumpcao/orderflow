@@ -4,59 +4,102 @@
   min-height: 100vh;
 }
 
-.app-header,
-.app-footer {
-  padding: 0.75rem 1.5rem;
-  background: var(--of-surface-strong);
-  color: var(--of-on-surface-strong);
+.app-header {
+  border-bottom: 1px solid var(--of-border);
+  background: var(--of-surface);
 }
 
-.app-header {
+.header-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1.5rem;
-}
-
-// Sobre o fundo escuro, o contorno de foco claro mantém contraste ≥ 3:1 (WCAG 1.4.11)
-.app-header :focus-visible,
-.app-footer :focus-visible {
-  outline-color: #ffb15c;
+  gap: 0 2rem;
+  max-width: 75rem;
+  min-height: 4.25rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
 .brand {
-  color: inherit;
-  font-size: 1.25rem;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0;
+  color: var(--of-ink);
   text-decoration: none;
-}
-
-.app-nav ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.app-nav a {
-  display: inline-block;
-  padding: 0.5rem 0.25rem;
-  color: inherit;
-  text-underline-offset: 0.3em;
-
-  &:not(.active) {
-    text-decoration: none;
-  }
-
-  &.active {
-    font-weight: 700;
-    text-decoration-thickness: 2px;
-  }
 
   &:hover {
-    text-decoration: underline;
+    color: var(--of-ink);
+  }
+}
+
+.logo-tile {
+  fill: var(--of-primary);
+}
+
+.logo-front,
+.logo-back {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.logo-front {
+  stroke: var(--of-on-primary);
+}
+
+.logo-back {
+  stroke: var(--of-on-primary);
+  opacity: 0.6;
+}
+
+.brand-name {
+  font-family: var(--of-font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+  background: var(--of-strong);
+  color: var(--of-on-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-nav {
+  flex: 1 1 auto;
+
+  ul {
+    display: flex;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: inline-block;
+    padding: 1.375rem 0.75rem calc(1.375rem - 3px);
+    border-bottom: 3px solid transparent;
+    color: var(--of-muted);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--of-ink);
+    }
+
+    &.active {
+      border-bottom-color: var(--of-primary);
+      color: var(--of-primary);
+      font-weight: 600;
+    }
   }
 }
 
@@ -65,30 +108,66 @@
   align-items: center;
   gap: 0.75rem;
   margin-left: auto;
+  padding: 0.75rem 0;
 }
 
-// Botões nativos (o shell não carrega o Material): claros sobre o cabeçalho escuro, contraste AA
+.user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--of-ink-2);
+  font-weight: 500;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--of-primary-soft);
+  color: var(--of-on-primary-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+// O shell não carrega o Material: botões nativos com o mesmo desenho
 .session-button {
   min-height: 2.5rem;
-  padding: 0 1.25rem;
-  border: 1px solid #ffffff;
-  border-radius: 1.25rem;
+  padding: 0 1rem;
+  border-radius: 10px;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 
   &.filled {
-    background: #ffffff;
-    color: #12355b;
+    border: 1px solid var(--of-primary);
+    background: var(--of-primary);
+    color: var(--of-on-primary);
   }
 
   &.outlined {
-    background: transparent;
-    color: #ffffff;
+    border: 1px solid var(--of-border-strong);
+    background: var(--of-surface);
+    color: var(--of-ink-2);
+  }
+}
+
+// Celular: a navegação vai para a própria linha e rola na horizontal
+@media (max-width: 760px) {
+  .user-name {
+    display: none;
   }
 
-  &:hover {
-    text-decoration: underline;
+  .app-nav {
+    order: 3;
+    flex-basis: 100%;
+    overflow-x: auto;
+
+    a {
+      padding: 0.75rem 0.75rem calc(0.75rem - 3px);
+    }
   }
 }
 
@@ -110,7 +189,7 @@
   min-height: 2.25rem;
   padding: 0 1rem;
   border: 1px solid currentColor;
-  border-radius: 1.125rem;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -121,16 +200,23 @@
 .app-main {
   flex: 1;
   width: 100%;
-  max-width: 72rem;
+  max-width: 75rem;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem 1.5rem 3.5rem;
 }
 
 .app-main:focus {
   outline: none;
 }
 
-.app-footer p {
-  margin: 0;
-  font-size: 0.875rem;
+.app-footer {
+  border-top: 1px solid var(--of-border);
+  padding: 1rem 1.5rem;
+  color: var(--of-muted);
+
+  p {
+    max-width: 75rem;
+    margin: 0 auto;
+    font-size: 0.875rem;
+  }
 }

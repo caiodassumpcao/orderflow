@@ -26,7 +26,11 @@ import { ErrorAlert } from '../../../shared/error-alert/error-alert';
 import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { OrderDetails } from '../../../shared/order-details/order-details';
 import { ORDER_POLL_INTERVAL_MS, pollOrder } from '../../../shared/order-poller';
-import { ORDER_STATUS_LABELS, isAwaitingStock } from '../../../shared/order-status/order-status';
+import {
+  ORDER_STATUS_LABELS,
+  OrderStatusBadge,
+  isAwaitingStock,
+} from '../../../shared/order-status/order-status';
 
 @Component({
   selector: 'of-order-detail',
@@ -37,8 +41,10 @@ import { ORDER_STATUS_LABELS, isAwaitingStock } from '../../../shared/order-stat
     ErrorAlert,
     LoadingIndicator,
     OrderDetails,
+    OrderStatusBadge,
   ],
   templateUrl: './order-detail.html',
+  styleUrl: './order-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderDetail implements OnInit {

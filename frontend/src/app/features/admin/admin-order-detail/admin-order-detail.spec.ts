@@ -32,7 +32,8 @@ describe('AdminOrderDetail', () => {
     (await confirmShipping()).flush(anOrder({ status: 'SHIPPED' }));
 
     expect(await screen.findByText('Pedido marcado como enviado.')).toBeInTheDocument();
-    expect(screen.getByText('Enviado')).toBeInTheDocument();
+    // O selo do status; a linha do tempo também tem o passo "Enviado".
+    expect(screen.getByText('Enviado', { selector: '.badge' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Marcar como enviado' })).not.toBeInTheDocument();
   });
 

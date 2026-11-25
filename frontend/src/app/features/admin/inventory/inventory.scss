@@ -1,24 +1,40 @@
-.name {
-  font-weight: 400;
+.empty {
+  margin: 0;
 }
 
-.low {
-  color: var(--of-error);
-  font-weight: 600;
-}
-
-.low-label {
-  margin-left: 0.25rem;
-}
-
-.register {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0 1rem;
-  max-width: 48rem;
+.form-grid {
+  max-width: 52rem;
 }
 
 .wide,
 .full {
   grid-column: 1 / -1;
+}
+
+.available {
+  font-variant-numeric: tabular-nums;
+}
+
+.row-action {
+  text-align: right;
+}
+
+.stock-badge {
+  display: inline-block;
+  padding: 0.2rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+
+  &.out {
+    background: var(--of-status-cancelled-bg);
+    color: var(--of-status-cancelled-fg);
+  }
+
+  &.low {
+    background: var(--of-status-pending-bg);
+    color: var(--of-status-pending-fg);
+  }
 }

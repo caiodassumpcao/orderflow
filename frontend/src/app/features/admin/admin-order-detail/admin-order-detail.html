@@ -1,25 +1,38 @@
-<p><a routerLink="/admin/pedidos">← Todos os pedidos</a></p>
+<nav class="breadcrumb" aria-label="Trilha">
+  <a routerLink="/admin/pedidos">Todos os pedidos</a>
+  <span aria-hidden="true"> / </span>
+  <span aria-current="page">Pedido #{{ id().slice(0, 8) }}</span>
+</nav>
 
-<h1>Pedido {{ id().slice(0, 8) }}</h1>
+<div class="page-header">
+  <div>
+    <div class="title-row">
+      <h1>Pedido #{{ id().slice(0, 8) }}</h1>
+      @if (detail(); as detail) {
+        <of-order-status [status]="detail.order.status" />
+      }
+    </div>
+    @if (detail(); as detail) {
+      <p class="subtitle">
+        Cliente: <strong class="customer">{{ detail.customerId }}</strong>
+      </p>
+    }
+  </div>
+  <button mat-stroked-button type="button" [disabled]="loading()" (click)="load()">
+    Atualizar
+  </button>
+</div>
 
 <of-loading-indicator [active]="loading()" label="Carregando o pedido" />
 <of-error-alert [error]="loadError()" />
 
 @if (detail(); as detail) {
-  <p>
-    Cliente: <strong>{{ detail.customerId }}</strong>
-  </p>
-
-  <of-order-details [order]="detail.order" />
-
-  <of-error-alert [error]="actionError()" />
-
-  <div class="actions">
+  <of-order-details [order]="detail.order">
+    <of-error-alert [error]="actionError()" />
     @if (detail.order.status === 'CONFIRMED') {
       <button mat-flat-button type="button" [disabled]="shipping()" (click)="ship()">
         Marcar como enviado
       </button>
     }
-    <button mat-button type="button" [disabled]="loading()" (click)="load()">Atualizar</button>
-  </div>
+  </of-order-details>
 }

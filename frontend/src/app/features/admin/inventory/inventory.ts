@@ -26,6 +26,7 @@ import { ApiError, toApiError } from '../../../core/http/api-error';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
 import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { PagedList } from '../../../shared/paged-list';
+import { LOW_STOCK_THRESHOLD } from '../../../shared/stock';
 import { RestockDialog } from './restock-dialog';
 
 /** Moedas oferecidas no cadastro (a API aceita qualquer código ISO 4217). */
@@ -55,6 +56,7 @@ export class Inventory {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly currencies = CURRENCIES;
+  protected readonly lowThreshold = LOW_STOCK_THRESHOLD;
   protected readonly stock = new PagedList<StockItem>((cursor) => this.api.list(cursor));
 
   protected readonly form = new FormGroup({
