@@ -196,6 +196,14 @@ class OrderWriteModelIT {
             .list();
 
     assertThat(positions).hasSize(2).isSorted().doesNotHaveDuplicates();
+    assertThat(
+            jdbc.sql(
+                    "SELECT aggregate_version FROM command.outbox WHERE aggregate_id = ?"
+                        + " ORDER BY position")
+                .param(order.id().value())
+                .query(Long.class)
+                .list())
+        .containsExactly(0L, 1L);
     assertThat(outboxTypes(order.id())).containsExactly("OrderCreated", "OrderCancelled");
   }
 
@@ -222,6 +230,7 @@ class OrderWriteModelIT {
             "order.events",
             "Order",
             order.id().value(),
+            0,
             "Probe",
             1,
             "{}",

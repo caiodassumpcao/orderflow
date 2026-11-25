@@ -7,6 +7,7 @@ import static com.caiodassumpcao.orderflow.orders.domain.OrderFixtures.brl;
 import static com.caiodassumpcao.orderflow.orders.domain.OrderFixtures.line;
 import static com.caiodassumpcao.orderflow.orders.domain.OrderFixtures.newOrderId;
 import static com.caiodassumpcao.orderflow.orders.domain.OrderFixtures.placedOrder;
+import static com.caiodassumpcao.orderflow.orders.domain.OrderFixtures.reload;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -57,7 +58,7 @@ class OrderTest {
       assertThat(order.pullEvents())
           .containsExactly(
               new OrderCreated(
-                  id, CUSTOMER, List.of(line("SKU-001", 3, "10.00")), brl("30.00"), NOW));
+                  id, 0, CUSTOMER, List.of(line("SKU-001", 3, "10.00")), brl("30.00"), NOW));
     }
 
     @Test
@@ -129,7 +130,7 @@ class OrderTest {
   class Lifecycle {
 
     @Test
-    void followsTheHappyPathUntilShipped() {
+    void followsTheHappyPathUntilShippedWithIncreasingEventVersions() {
       Order order = placedOrder();
 
       order.markStockReserved(NOW);
@@ -138,12 +139,24 @@ class OrderTest {
 
       order.confirm(NOW);
       assertThat(order.status()).isEqualTo(OrderStatus.CONFIRMED);
-      assertThat(order.pullEvents()).containsExactly(new OrderConfirmed(order.id(), NOW));
+      assertThat(order.pullEvents()).containsExactly(new OrderConfirmed(order.id(), 1, NOW));
 
-      order.ship(LATER);
-      assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
-      assertThat(order.updatedAt()).isEqualTo(LATER);
-      assertThat(order.pullEvents()).containsExactly(new OrderShipped(order.id(), LATER));
+      Order saved = reload(order, 1);
+      saved.ship(LATER);
+      assertThat(saved.status()).isEqualTo(OrderStatus.SHIPPED);
+      assertThat(saved.updatedAt()).isEqualTo(LATER);
+      assertThat(saved.pullEvents()).containsExactly(new OrderShipped(order.id(), 2, LATER));
+    }
+
+    @Test
+    void refusesASecondChangeBeforeTheFirstIsSaved() {
+      Order order = Order.place(newOrderId(), CUSTOMER, List.of(line("SKU-001", 1, "1.00")), NOW);
+      order.pullEvents();
+
+      assertThatThrownBy(() -> order.cancel(null, LATER))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("unsaved change");
+      assertThat(order.status()).isEqualTo(OrderStatus.CREATED);
     }
 
     @Test
@@ -194,7 +207,7 @@ class OrderTest {
       assertThat(order.updatedAt()).isEqualTo(LATER);
       assertThat(order.pullEvents())
           .containsExactly(
-              new OrderCancelled(order.id(), OrderStatus.CREATED, "Changed my mind", LATER));
+              new OrderCancelled(order.id(), 1, OrderStatus.CREATED, "Changed my mind", LATER));
     }
 
     @Test
@@ -206,7 +219,8 @@ class OrderTest {
 
       assertThat(order.cancellationReason()).isEmpty();
       assertThat(order.pullEvents())
-          .containsExactly(new OrderCancelled(order.id(), OrderStatus.STOCK_RESERVED, null, LATER));
+          .containsExactly(
+              new OrderCancelled(order.id(), 1, OrderStatus.STOCK_RESERVED, null, LATER));
     }
 
     @Test

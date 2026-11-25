@@ -17,10 +17,11 @@ public class OutboxWriter {
   private static final String INSERT =
       """
       INSERT INTO command.outbox
-          (id, topic, aggregate_type, aggregate_id, event_type, event_version, payload,
+          (id, topic, aggregate_type, aggregate_id, aggregate_version, event_type, event_version,
+           payload,
            correlation_id, occurred_at)
       VALUES
-          (:id, :topic, :aggregateType, :aggregateId, :eventType, :eventVersion,
+          (:id, :topic, :aggregateType, :aggregateId, :aggregateVersion, :eventType, :eventVersion,
            CAST(:payload AS jsonb),
            :correlationId, :occurredAt)
       """;
@@ -38,6 +39,7 @@ public class OutboxWriter {
         .param("topic", message.topic())
         .param("aggregateType", message.aggregateType())
         .param("aggregateId", message.aggregateId())
+        .param("aggregateVersion", message.aggregateVersion())
         .param("eventType", message.eventType())
         .param("eventVersion", message.eventVersion())
         .param("payload", message.payloadJson())

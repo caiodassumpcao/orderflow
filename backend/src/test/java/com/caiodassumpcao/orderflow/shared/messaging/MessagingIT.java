@@ -78,6 +78,7 @@ class MessagingIT {
     assertThat(envelopes)
         .extracting(EventEnvelope::type)
         .containsExactly("OrderCreated", "OrderCancelled");
+    assertThat(envelopes).extracting(EventEnvelope::aggregateVersion).containsExactly(0L, 1L);
     assertThat(envelopes)
         .allSatisfy(e -> assertThat(e.aggregateId()).isEqualTo(order.id().value()));
     assertThat(envelopes.getFirst().payload().get("total").asString()).isEqualTo("39.80");
@@ -163,6 +164,7 @@ class MessagingIT {
             "ProbeEvent",
             1,
             UUID.fromString(aggregateId),
+            0,
             Instant.now(),
             "corr-" + aggregateId.substring(0, 8),
             json.readTree("{}")));

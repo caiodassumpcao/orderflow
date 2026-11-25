@@ -28,15 +28,29 @@ public final class OrderFixtures {
     return new OrderId(UUID.randomUUID());
   }
 
-  /** Pedido recém-criado com dois itens (total 250.00 BRL) e eventos já consumidos. */
+  /** Pedido criado e já salvo (versão 0), com dois itens (total 250.00 BRL). */
   public static Order placedOrder() {
-    Order order =
-        Order.place(
-            newOrderId(),
-            CUSTOMER,
-            List.of(line("SKU-001", 2, "50.00"), line("SKU-002", 1, "150.00")),
-            NOW);
-    order.pullEvents();
-    return order;
+    return Order.rehydrate(
+        newOrderId(),
+        CUSTOMER,
+        List.of(line("SKU-001", 2, "50.00"), line("SKU-002", 1, "150.00")),
+        OrderStatus.CREATED,
+        null,
+        NOW,
+        NOW,
+        0L);
+  }
+
+  /** Simula salvar e recarregar o pedido com a versão informada. */
+  public static Order reload(Order order, long version) {
+    return Order.rehydrate(
+        order.id(),
+        order.customerId(),
+        order.lines(),
+        order.status(),
+        order.cancellationReason().orElse(null),
+        order.createdAt(),
+        order.updatedAt(),
+        version);
   }
 }

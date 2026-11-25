@@ -11,6 +11,7 @@ import java.util.UUID;
  * @param topic tópico Kafka de destino
  * @param aggregateType tipo do agregado (ex.: {@code Order})
  * @param aggregateId id do agregado; também é a chave de partição no Kafka
+ * @param aggregateVersion versão do agregado depois do evento (crescente por agregado)
  * @param eventType nome do evento (ex.: {@code OrderCreated})
  * @param eventVersion versão do contrato do payload
  * @param payloadJson payload serializado
@@ -22,6 +23,7 @@ public record OutboxMessage(
     String topic,
     String aggregateType,
     UUID aggregateId,
+    long aggregateVersion,
     String eventType,
     int eventVersion,
     String payloadJson,
@@ -33,6 +35,9 @@ public record OutboxMessage(
     Objects.requireNonNull(topic);
     Objects.requireNonNull(aggregateType);
     Objects.requireNonNull(aggregateId);
+    if (aggregateVersion < 0) {
+      throw new IllegalArgumentException("aggregateVersion must not be negative");
+    }
     Objects.requireNonNull(eventType);
     Objects.requireNonNull(payloadJson);
     Objects.requireNonNull(occurredAt);

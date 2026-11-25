@@ -12,6 +12,7 @@ Cada linha da outbox guarda os campos do envelope em colunas e o payload em `jso
   "type": "OrderCreated",
   "version": 1,
   "aggregateId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+  "aggregateVersion": 0,
   "occurredAt": "2026-11-24T19:20:31.512Z",
   "correlationId": "4f1c2b7e-8a43-4d0e-9a51-2b9e6f0c1d77",
   "payload": {}
@@ -24,6 +25,7 @@ Cada linha da outbox guarda os campos do envelope em colunas e o payload em `jso
 | `type` | `event_type` | Nome do evento |
 | `version` | `event_version` | Versão do contrato do payload |
 | `aggregateId` | `aggregate_id` | Id do pedido |
+| `aggregateVersion` | `aggregate_version` | Versão do pedido depois do evento: 0 na criação, crescente e única por pedido. Consumers aplicam só eventos mais novos do que o último que viram, o que os torna tolerantes a eventos fora de ordem |
 | `occurredAt` | `occurred_at` | Quando o fato aconteceu (UTC) |
 | `correlationId` | `correlation_id` | Id da requisição que originou o evento (pode ser nulo) |
 | `payload` | `payload` | Conteúdo específico do evento (abaixo) |

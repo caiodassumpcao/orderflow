@@ -159,7 +159,8 @@ public class OutboxRelay {
   private List<PendingEvent> loadPending() {
     return jdbc.sql(
             """
-            SELECT id, topic, event_type, event_version, aggregate_id, occurred_at,
+            SELECT id, topic, event_type, event_version, aggregate_id, aggregate_version,
+                   occurred_at,
                    correlation_id, payload::text AS payload
               FROM command.outbox
              WHERE published_at IS NULL
@@ -175,6 +176,7 @@ public class OutboxRelay {
                     rs.getString("event_type"),
                     rs.getInt("event_version"),
                     rs.getObject("aggregate_id", UUID.class),
+                    rs.getLong("aggregate_version"),
                     rs.getObject("occurred_at", OffsetDateTime.class).toInstant(),
                     rs.getString("correlation_id"),
                     json.readTree(rs.getString("payload")))))

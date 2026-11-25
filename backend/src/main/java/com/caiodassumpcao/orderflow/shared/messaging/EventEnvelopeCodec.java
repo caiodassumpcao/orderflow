@@ -25,6 +25,7 @@ public class EventEnvelopeCodec {
     node.put("type", envelope.type());
     node.put("version", envelope.version());
     node.put("aggregateId", envelope.aggregateId().toString());
+    node.put("aggregateVersion", envelope.aggregateVersion());
     node.put("occurredAt", envelope.occurredAt().toString());
     node.put("correlationId", envelope.correlationId());
     node.set("payload", envelope.payload());
@@ -50,12 +51,20 @@ public class EventEnvelopeCodec {
       if (!version.isInt() || version.asInt() < 1) {
         throw new PoisonMessageException("Envelope version must be a positive integer");
       }
+      JsonNode aggregateVersion = required(node, "aggregateVersion");
+      if (!aggregateVersion.canConvertToLong()
+          || !aggregateVersion.isIntegralNumber()
+          || aggregateVersion.asLong() < 0) {
+        throw new PoisonMessageException(
+            "Envelope aggregateVersion must be a non-negative integer");
+      }
       JsonNode correlationId = node.get("correlationId");
       return new EventEnvelope(
           UUID.fromString(required(node, "eventId").asString()),
           required(node, "type").asString(),
           version.asInt(),
           UUID.fromString(required(node, "aggregateId").asString()),
+          aggregateVersion.asLong(),
           Instant.parse(required(node, "occurredAt").asString()),
           correlationId == null || correlationId.isNull() ? null : correlationId.asString(),
           payload);
