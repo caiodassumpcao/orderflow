@@ -66,8 +66,12 @@ public final class EventContracts {
 
   /** Violações do payload contra o schema do tipo e da versão. */
   public static List<String> payloadViolations(String type, int version, JsonNode payload) {
-    return messages(
-        schema(fileName(type) + ".v" + version + ".schema.json").validate(payload), "payload: ");
+    String file = fileName(type) + ".v" + version + ".schema.json";
+    if (!Files.exists(EVENTS.resolve("schemas").resolve(file))) {
+      return List.of(
+          "sem contrato para " + type + " v" + version + " (docs/events/schemas/" + file + ")");
+    }
+    return messages(schema(file).validate(payload), "payload: ");
   }
 
   /** Violações da mensagem inteira: envelope e, conforme o tipo, o payload. */

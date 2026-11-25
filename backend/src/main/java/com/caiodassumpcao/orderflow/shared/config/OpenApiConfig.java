@@ -9,6 +9,7 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -110,6 +111,15 @@ public class OpenApiConfig {
       }
     }
     collectReferences(schema.getItems(), schemas, found);
+    if (schema.getAdditionalProperties() instanceof Schema<?> values) {
+      collectReferences(values, schemas, found);
+    }
+    for (List<Schema> composed :
+        Arrays.asList(schema.getAllOf(), schema.getOneOf(), schema.getAnyOf())) {
+      if (composed != null) {
+        composed.forEach(part -> collectReferences(part, schemas, found));
+      }
+    }
     if (schema.getProperties() != null) {
       ((Map<String, Schema<?>>) (Map) schema.getProperties())
           .values()

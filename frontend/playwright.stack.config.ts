@@ -14,9 +14,10 @@ function loadRootEnv(): void {
     return;
   }
   for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+    const match = /^(?:export\s+)?([A-Z0-9_]+)=(.*)$/.exec(line.trim());
     if (match && process.env[match[1]] === undefined) {
-      process.env[match[1]] = match[2];
+      // Como o docker compose: aspas em volta do valor não fazem parte dele.
+      process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
     }
   }
 }

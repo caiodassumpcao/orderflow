@@ -73,7 +73,9 @@ test.describe('customer', () => {
     const id = api.seedOrder(CUSTOMER.sub, 'CREATED');
     await page.goto(`/pedidos/${id}`);
 
-    await expect(page.getByText('Aguardando a reserva de estoque…', { exact: true })).toBeVisible();
+    await expect(
+      page.locator('of-loading-indicator').getByText('Atualizando o pedido…'),
+    ).toBeVisible();
     await expect(page.getByRole('progressbar')).toBeHidden();
     const loopingAnimations = await page.evaluate(
       () =>

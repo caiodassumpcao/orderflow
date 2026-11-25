@@ -59,6 +59,18 @@ class EventExamplesContractTest {
   }
 
   @Test
+  void reportsAVersionWithoutContractInsteadOfFailingToLoadIt() {
+    String example =
+        EventContracts.example("OrderConfirmed").replace("\"version\": 1", "\"version\": 2");
+
+    assertThat(EventContracts.messageViolations(EventContracts.parse(example)))
+        .singleElement()
+        .asString()
+        .startsWith("sem contrato para OrderConfirmed v2")
+        .contains("order-confirmed.v2.schema.json");
+  }
+
+  @Test
   void schemasRejectMessagesOutOfContract() {
     String example = EventContracts.example("OrderCreated");
 

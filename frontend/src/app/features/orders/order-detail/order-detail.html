@@ -5,10 +5,7 @@
 <!-- Anuncia as mudanças de status enquanto a saga de estoque acontece -->
 <p class="visually-hidden" role="status">{{ statusMessage() }}</p>
 
-<of-loading-indicator
-  [active]="polling()"
-  [label]="awaitingStock() ? 'Aguardando a reserva de estoque' : 'Carregando o pedido'"
-/>
+<of-loading-indicator [active]="polling()" label="Atualizando o pedido" />
 
 <of-error-alert [error]="loadError()" />
 

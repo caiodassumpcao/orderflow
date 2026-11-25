@@ -42,7 +42,11 @@ export class AuthService {
   readonly isAdmin = computed(() => this.roles().includes(Role.Admin));
 
   private readonly unavailable = signal(false);
-  /** O provedor de login não respondeu (descoberta OIDC falhou) na última tentativa de entrar. */
+  /**
+   * A descoberta OIDC falhou (provedor de login fora do ar). Acontece ao entrar ou ao processar o
+   * retorno do login; volta a falso a cada nova tentativa. Se os endpoints já estavam em cache, o
+   * navegador segue para o provedor e o erro aparece na página dele.
+   */
   readonly loginUnavailable = this.unavailable.asReadonly();
 
   constructor() {

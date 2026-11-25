@@ -72,15 +72,24 @@ function operation(method: string, path: string): Operation {
   return found;
 }
 
+const compiled = new WeakMap<Json, ValidateFunction>();
+
+/** Compila uma vez por schema do contrato (o Ajv guarda o cache pela identidade do objeto). */
 function compile(schema: Json | undefined, what: string): ValidateFunction {
   if (!schema) {
     throw new Error(`${what} não tem corpo JSON no contrato`);
+  }
+  const cached = compiled.get(schema);
+  if (cached) {
+    return cached;
   }
   // Os $ref do contrato apontam para "#/components/..."; aqui resolvem no esquema "openapi".
   const rebased = JSON.parse(
     JSON.stringify(schema).replace(/"#\/components\//g, '"openapi#/components/'),
   );
-  return ajv.compile(rebased);
+  const validate = ajv.compile(rebased);
+  compiled.set(schema, validate);
+  return validate;
 }
 
 function check(validate: ValidateFunction, body: unknown, what: string): void {

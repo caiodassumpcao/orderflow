@@ -66,8 +66,12 @@ test.describe('stack real', () => {
 
     // A primeira página lista 50 produtos em ordem de SKU; carrega até achar o novo.
     const restock = page.getByRole('button', { name: `Repor Produto ${sku}` });
+    const loadMore = page.getByRole('button', { name: 'Carregar mais' });
+    // A lista recarrega depois do cadastro: espera a linha nova ou o botão da próxima página.
+    await expect(restock.or(loadMore)).toBeVisible();
     while (!(await restock.isVisible())) {
-      await page.getByRole('button', { name: 'Carregar mais' }).click();
+      await loadMore.click();
+      await expect(restock.or(loadMore)).toBeVisible();
     }
     await restock.click();
     await page.getByRole('dialog').getByLabel('Unidades a repor').fill('7');
