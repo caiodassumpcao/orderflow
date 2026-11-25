@@ -352,7 +352,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Probes `liveness`/`readiness` públicos e sem detalhes; `HEALTHCHECK` na imagem da API.
   - OWASP Dependency-Check no CI (`dependency-check.yml`); requer o secret `NVD_API_KEY`.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
-- [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
+- [x] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
   - Login OIDC com PKCE na SPA ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)); telas do cliente (pedidos, criação com preço de catálogo, detalhe que acompanha a saga e tolera o atraso da projeção, cancelamento) e da operação (painel, todos os pedidos com envio, estoque com cadastro e reposição).
   - Backend: catálogo para clientes, cadastro de produto e reposição com `If-Match` (V10: nome do produto) e `GET /api/v1/dashboard/summary`.
   - Imagem `orderflow-web` configurada em runtime (`config.json` e CSP gerados das variáveis `ORDERFLOW_*`).
