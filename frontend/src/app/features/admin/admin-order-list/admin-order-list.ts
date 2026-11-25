@@ -4,11 +4,11 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { AdminOrderSummary, ORDER_STATUSES, OrderStatus } from '../../../core/api/models';
 import { OrdersApi } from '../../../core/api/orders-api';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { ORDER_STATUS_LABELS, OrderStatusBadge } from '../../../shared/order-status/order-status';
 import { PagedList } from '../../../shared/paged-list';
 
@@ -25,8 +25,8 @@ const CUSTOMER_ID_PATTERN = /^[A-Za-z0-9._:@-]{1,64}$/;
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressBarModule,
     ErrorAlert,
+    LoadingIndicator,
     OrderStatusBadge,
   ],
   templateUrl: './admin-order-list.html',

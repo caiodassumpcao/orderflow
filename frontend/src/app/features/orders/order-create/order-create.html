@@ -4,9 +4,7 @@
   confirmado ou cancelado automaticamente.
 </p>
 
-@if (catalogLoading()) {
-  <mat-progress-bar mode="indeterminate" aria-label="Carregando o catálogo" />
-}
+<of-loading-indicator [active]="catalogLoading()" label="Carregando o catálogo" />
 <of-error-alert [error]="catalogError()" />
 
 @if (!catalogLoading() && !catalogError() && catalog().length === 0) {

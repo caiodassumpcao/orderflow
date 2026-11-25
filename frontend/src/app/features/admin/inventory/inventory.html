@@ -4,9 +4,7 @@
   <h2 id="products-title">Produtos</h2>
 
   <of-error-alert [error]="stock.error()" />
-  @if (stock.loading()) {
-    <mat-progress-bar mode="indeterminate" aria-label="Carregando produtos" />
-  }
+  <of-loading-indicator [active]="stock.loading()" label="Carregando produtos" />
 
   @if (stock.loaded() && stock.items().length === 0) {
     <p>Nenhum produto cadastrado.</p>

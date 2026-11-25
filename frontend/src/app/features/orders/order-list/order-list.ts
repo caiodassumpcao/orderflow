@@ -3,11 +3,11 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ORDER_STATUSES, OrderStatus, OrderSummary } from '../../../core/api/models';
 import { OrdersApi } from '../../../core/api/orders-api';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { ORDER_STATUS_LABELS, OrderStatusBadge } from '../../../shared/order-status/order-status';
 import { PagedList } from '../../../shared/paged-list';
 
@@ -20,8 +20,8 @@ import { PagedList } from '../../../shared/paged-list';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressBarModule,
     ErrorAlert,
+    LoadingIndicator,
     OrderStatusBadge,
   ],
   templateUrl: './order-list.html',

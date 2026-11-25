@@ -10,7 +10,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
@@ -23,6 +22,7 @@ import {
   ConfirmDialogResult,
 } from '../../../shared/confirm-dialog/confirm-dialog';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { OrderDetails } from '../../../shared/order-details/order-details';
 
 @Component({
@@ -30,9 +30,9 @@ import { OrderDetails } from '../../../shared/order-details/order-details';
   imports: [
     RouterLink,
     MatButtonModule,
-    MatProgressBarModule,
     MatSnackBarModule,
     ErrorAlert,
+    LoadingIndicator,
     OrderDetails,
   ],
   templateUrl: './admin-order-detail.html',

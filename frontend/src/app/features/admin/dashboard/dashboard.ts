@@ -9,12 +9,12 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { DashboardApi } from '../../../core/api/dashboard-api';
 import { DashboardSummary, ORDER_STATUSES } from '../../../core/api/models';
 import { ApiError, toApiError } from '../../../core/http/api-error';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { ORDER_STATUS_LABELS } from '../../../shared/order-status/order-status';
 
 export const DASHBOARD_DAYS = 7;
@@ -32,8 +32,8 @@ export function browserTimeZone(): string {
     DecimalPipe,
     RouterLink,
     MatButtonModule,
-    MatProgressBarModule,
     ErrorAlert,
+    LoadingIndicator,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

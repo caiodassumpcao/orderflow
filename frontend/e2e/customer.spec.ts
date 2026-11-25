@@ -61,6 +61,29 @@ test.describe('customer', () => {
     await expect(page.getByText('Comprei errado')).toBeVisible();
   });
 
+  test('shows a calm loading indicator when the system asks for reduced motion', async ({
+    page,
+  }) => {
+    // Animações desligadas no sistema operacional: a barra animada não pode piscar.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const id = api.seedOrder(CUSTOMER.sub, 'CREATED');
+    await page.goto(`/pedidos/${id}`);
+
+    await expect(page.getByText('Aguardando a reserva de estoque…', { exact: true })).toBeVisible();
+    await expect(page.getByRole('progressbar')).toBeHidden();
+    const loopingAnimations = await page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter(
+            (a) =>
+              a.playState === 'running' && a.effect?.getComputedTiming().iterations === Infinity,
+          ).length,
+    );
+    expect(loopingAnimations).toBe(0);
+    await expectNoA11yViolations(page);
+  });
+
   test('is kept away from the operation pages', async ({ page }) => {
     await page.goto('/pedidos');
     await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();

@@ -19,12 +19,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InventoryApi } from '../../../core/api/inventory-api';
 import { StockItem } from '../../../core/api/models';
 import { ApiError, toApiError } from '../../../core/http/api-error';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { PagedList } from '../../../shared/paged-list';
 import { RestockDialog } from './restock-dialog';
 
@@ -40,9 +40,9 @@ export const CURRENCIES = ['BRL', 'USD', 'EUR'] as const;
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressBarModule,
     MatSnackBarModule,
     ErrorAlert,
+    LoadingIndicator,
   ],
   templateUrl: './inventory.html',
   styleUrl: './inventory.scss',

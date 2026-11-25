@@ -21,7 +21,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { map, startWith } from 'rxjs';
@@ -31,6 +30,7 @@ import { CatalogItem } from '../../../core/api/models';
 import { OrdersApi } from '../../../core/api/orders-api';
 import { ApiError, toApiError } from '../../../core/http/api-error';
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
+import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 
 /** Limites da API (PlaceOrderRequest). */
 export const MAX_LINES = 50;
@@ -53,9 +53,9 @@ interface PricedLine {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressBarModule,
     MatSnackBarModule,
     ErrorAlert,
+    LoadingIndicator,
   ],
   templateUrl: './order-create.html',
   styleUrl: './order-create.scss',
