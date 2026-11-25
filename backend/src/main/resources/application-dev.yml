@@ -1,6 +1,9 @@
 # Perfil de desenvolvimento local (infra do `make up`).
 # Endpoints derivados das variáveis do `.env`; credenciais nunca têm valor literal aqui.
 spring:
+  flyway:
+    # Migrations de produção + estoque de demonstração (só em dev).
+    locations: classpath:db/migration,classpath:db/dev-data
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:${POSTGRES_PORT:5432}/${POSTGRES_DB:orderflow}}
     username: ${DB_USERNAME:${POSTGRES_USER}}
