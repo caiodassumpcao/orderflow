@@ -5,9 +5,12 @@ import { RouterLink } from '@angular/router';
   selector: 'of-forbidden',
   imports: [RouterLink],
   template: `
-    <h1>Acesso negado</h1>
-    <p>Sua conta não tem permissão para acessar esta página.</p>
-    <p><a routerLink="/">Voltar para o início</a></p>
+    <section class="card card-body">
+      <p class="overline">Erro 403</p>
+      <h1>Acesso negado</h1>
+      <p class="muted">Sua conta não tem permissão para acessar esta página.</p>
+      <p><a routerLink="/">Voltar para o início</a></p>
+    </section>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

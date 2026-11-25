@@ -72,5 +72,5 @@ Testes automáticos cobrem por volta de metade dos critérios da WCAG. Os itens 
 
 ## Limitações conhecidas
 
-- A tela de login é do Keycloak (tema padrão), fora do alcance destes testes. A revisão do tema entra junto com a Fase 7.1 (Design e UX).
+- A tela de login é do Keycloak, com o tema do OrderFlow (Fase 7.1) e em português. Como os e2e com axe simulam o provedor, ela fica fora deles. Foi verificada com o axe nos dois temas, sem violações, e é usada pelos e2e da stack real.
 - O seletor de produto da criação de pedido é um `select` nativo. É acessível, mas não tem busca; com catálogos grandes, um combobox com filtro seria melhor.

@@ -1,0 +1,44 @@
+<ol class="timeline">
+  @for (step of steps(); track step.label; let last = $last) {
+    <li [class]="step.state" [attr.aria-current]="step.state === 'current' ? 'step' : null">
+      <div class="track" aria-hidden="true">
+        <span class="marker">
+          @if (step.state === 'done' || step.state === 'current') {
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <path d="M5 12l4 4 10-10" />
+            </svg>
+          }
+          @if (step.state === 'cancelled') {
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <path d="M7 7l10 10M17 7L7 17" />
+            </svg>
+          }
+        </span>
+        @if (!last) {
+          <span class="line"></span>
+        }
+      </div>
+      <p class="label">
+        {{ step.label }}
+        <span class="visually-hidden">
+          @switch (step.state) {
+            @case ('done') {
+              (concluído)
+            }
+            @case ('current') {
+              (etapa atual)
+            }
+            @case ('todo') {
+              (pendente)
+            }
+          }
+        </span>
+      </p>
+      @if (step.at) {
+        <p class="when">{{ step.at | date: 'dd/MM HH:mm:ss' }}</p>
+      } @else if (step.hint) {
+        <p class="when">{{ step.hint }}</p>
+      }
+    </li>
+  }
+</ol>

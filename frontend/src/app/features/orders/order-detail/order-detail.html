@@ -1,6 +1,20 @@
-<p><a routerLink="/pedidos">← Meus pedidos</a></p>
+<nav class="breadcrumb" aria-label="Trilha">
+  <a routerLink="/pedidos">Meus pedidos</a>
+  <span aria-hidden="true"> / </span>
+  <span aria-current="page">Pedido #{{ id().slice(0, 8) }}</span>
+</nav>
 
-<h1>Pedido {{ id().slice(0, 8) }}</h1>
+<div class="page-header">
+  <div class="title-row">
+    <h1>Pedido #{{ id().slice(0, 8) }}</h1>
+    @if (order(); as order) {
+      <of-order-status [status]="order.status" />
+    }
+  </div>
+  @if (!polling() && order()) {
+    <button mat-stroked-button type="button" (click)="refresh()">Atualizar</button>
+  }
+</div>
 
 <!-- Anuncia as mudanças de status enquanto a saga de estoque acontece -->
 <p class="visually-hidden" role="status">{{ statusMessage() }}</p>
@@ -11,24 +25,18 @@
 
 @if (order(); as order) {
   @if (awaitingStock()) {
-    <p class="muted">
+    <p class="notice">
       O estoque está sendo reservado; esta página se atualiza sozinha. Você pode cancelar o pedido
       enquanto ele aguarda o estoque.
     </p>
   }
 
-  <of-order-details [order]="order" />
-
-  <of-error-alert [error]="actionError()" />
-
-  <div class="actions">
+  <of-order-details [order]="order">
+    <of-error-alert [error]="actionError()" />
     @if (order.status === 'CREATED') {
       <button mat-stroked-button type="button" [disabled]="cancelling()" (click)="cancel()">
         Cancelar pedido
       </button>
     }
-    @if (!polling()) {
-      <button mat-button type="button" (click)="refresh()">Atualizar</button>
-    }
-  </div>
+  </of-order-details>
 }

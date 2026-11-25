@@ -1,12 +1,15 @@
 fieldset {
-  margin: 1rem 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
+  min-width: 0;
 }
 
 legend {
-  margin-bottom: 0.5rem;
-  font-size: 1.25rem;
+  display: block;
+  width: 100%;
+  font-family: var(--of-font-display);
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
@@ -15,8 +18,8 @@ legend {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--of-border);
+  padding: 1rem 1.25rem 0;
+  border-bottom: 1px solid var(--of-divider);
 }
 
 .line-title {
@@ -26,26 +29,68 @@ legend {
 }
 
 .product {
-  flex: 1 1 22rem;
+  flex: 1 1 20rem;
 }
 
 .quantity {
-  flex: 0 1 9rem;
+  flex: 0 1 8rem;
 }
 
 .subtotal {
   display: flex;
   flex-direction: column;
-  min-width: 8rem;
+  min-width: 7rem;
   margin: 0;
+}
+
+.subtotal-value {
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
+.add-line {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
 .form-error {
+  margin: 0;
   color: var(--of-error);
   font-weight: 600;
 }
 
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+
 .total {
-  font-size: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--of-border);
+  font-weight: 600;
+
+  strong {
+    font-family: var(--of-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.submit {
+  width: 100%;
 }

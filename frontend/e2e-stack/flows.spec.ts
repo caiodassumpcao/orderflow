@@ -19,7 +19,10 @@ test.describe('stack real', () => {
     await test.step('a saga reserva o estoque e confirma o pedido', async () => {
       await expect(page.getByText('Confirmado').first()).toBeVisible({ timeout: 30_000 });
       await expectNoA11yViolations(page);
-      await page.getByRole('link', { name: '← Meus pedidos' }).click();
+      await page
+        .getByRole('navigation', { name: 'Trilha' })
+        .getByRole('link', { name: 'Meus pedidos' })
+        .click();
       await expect(page.getByRole('link', { name: `Pedido ${orderId.slice(0, 8)}` })).toBeVisible();
       await signOut(page);
     });

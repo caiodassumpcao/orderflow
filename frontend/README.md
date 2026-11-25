@@ -26,6 +26,21 @@ SPA Angular 22 (standalone, signals, `OnPush`, zoneless) com Angular Material (M
   - `admin` (operação): rotas `/admin`, `/admin/pedidos` e `/admin/estoque`.
 - `src/testing`: helpers dos testes unitários (fora da cobertura).
 
+## Design
+
+- **Identidade e tokens** (Fase 7.1): ficam em `src/styles.scss`, com cores, superfícies, status e foco nos temas claro e escuro. O Angular Material (M3) recebe esses valores pelos mixins de override.
+- **Fontes:** Inter (texto) e Space Grotesk (títulos) vêm dos pacotes `@fontsource-variable`, empacotadas no build, sem CDN.
+- **Padrões globais:**
+  - `page-header`, `overline` e `card`;
+  - `with-aside` (coluna principal com coluna lateral);
+  - `kpis`, `data-table`;
+  - `only-wide` e `only-narrow`: tabela no desktop, cards no celular.
+- **Componentes compartilhados:**
+  - selo de status com ponto;
+  - filtro de status em chips (`aria-pressed`);
+  - linha do tempo do pedido;
+  - indicador de carregamento estável.
+
 ## Configuração de runtime
 
 A SPA não tem URLs no build. Em dev, `public/config.json` aponta para a API em `:8080` e o Keycloak em `:8180`. Na imagem, o nginx gera `/config.json` e a CSP das variáveis `ORDERFLOW_API_URL`, `ORDERFLOW_OIDC_AUTHORITY` e `ORDERFLOW_OIDC_CLIENT_ID` (ver `nginx.conf.template`).

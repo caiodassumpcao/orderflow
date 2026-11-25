@@ -23,6 +23,9 @@ import { ApiError } from '../../core/http/api-error';
       color: var(--of-status-cancelled-fg);
       border-radius: 0.25rem;
     }
+    :host-context(.card) .alert {
+      margin: 1rem 1.25rem;
+    }
     p {
       margin: 0;
     }

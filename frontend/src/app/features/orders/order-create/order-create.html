@@ -1,109 +1,122 @@
-<h1>Novo pedido</h1>
-<p class="muted">
-  Os preços são os do catálogo. Depois de criado, o pedido aguarda a reserva de estoque e é
-  confirmado ou cancelado automaticamente.
-</p>
+<div class="page-header">
+  <div>
+    <p class="overline">Área do cliente</p>
+    <h1>Novo pedido</h1>
+    <p class="subtitle">
+      Os preços são os do catálogo. Depois de criado, o pedido aguarda a reserva de estoque e é
+      confirmado ou cancelado automaticamente.
+    </p>
+  </div>
+</div>
 
 <of-loading-indicator [active]="catalogLoading()" label="Carregando o catálogo" />
 <of-error-alert [error]="catalogError()" />
 
 @if (!catalogLoading() && !catalogError() && catalog().length === 0) {
-  <p>Não há produtos no catálogo no momento.</p>
+  <p class="card card-body">Não há produtos no catálogo no momento.</p>
 }
 
 @if (catalog().length > 0) {
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <fieldset formArrayName="lines">
-      <legend>Itens do pedido</legend>
+  <form class="with-aside" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="main-column card">
+      <fieldset formArrayName="lines">
+        <legend class="card-header">Itens do pedido</legend>
 
-      @for (line of lines.controls; track line; let i = $index) {
-        <div class="line" [formGroupName]="i" role="group" [attr.aria-labelledby]="'line-' + i">
-          <h2 class="line-title" [id]="'line-' + i">Item {{ i + 1 }}</h2>
+        @for (line of lines.controls; track line; let i = $index) {
+          <div class="line" [formGroupName]="i" role="group" [attr.aria-labelledby]="'line-' + i">
+            <h2 class="line-title" [id]="'line-' + i">Item {{ i + 1 }}</h2>
 
-          <mat-form-field class="product">
-            <mat-label>Produto</mat-label>
-            <select matNativeControl formControlName="sku" [id]="'sku-' + i" required>
-              <option value="">Escolha um produto</option>
-              @for (product of catalog(); track product.sku) {
-                <option [value]="product.sku" [disabled]="!product.inStock">
-                  {{ product.name }} ({{ product.sku }}) —
-                  {{ product.unitPrice | currency: product.currency
-                  }}{{ product.inStock ? '' : ' — sem estoque' }}
-                </option>
+            <mat-form-field class="product">
+              <mat-label>Produto</mat-label>
+              <select matNativeControl formControlName="sku" [id]="'sku-' + i" required>
+                <option value="">Escolha um produto</option>
+                @for (product of catalog(); track product.sku) {
+                  <option [value]="product.sku" [disabled]="!product.inStock">
+                    {{ product.name }} ({{ product.sku }}) —
+                    {{ product.unitPrice | currency: product.currency
+                    }}{{ product.inStock ? '' : ' — sem estoque' }}
+                  </option>
+                }
+              </select>
+              @if (line.controls.sku.hasError('required')) {
+                <mat-error>Escolha um produto.</mat-error>
               }
-            </select>
-            @if (line.controls.sku.hasError('required')) {
-              <mat-error>Escolha um produto.</mat-error>
-            }
-          </mat-form-field>
+            </mat-form-field>
 
-          <mat-form-field class="quantity">
-            <mat-label>Quantidade</mat-label>
-            <input
-              matInput
-              type="number"
-              inputmode="numeric"
-              formControlName="quantity"
-              min="1"
-              [max]="maxQuantity"
-              required
-            />
-            @if (line.controls.quantity.invalid) {
-              <mat-error>Informe um número inteiro de 1 a {{ maxQuantity }}.</mat-error>
-            }
-          </mat-form-field>
+            <mat-form-field class="quantity">
+              <mat-label>Quantidade</mat-label>
+              <input
+                matInput
+                type="number"
+                inputmode="numeric"
+                formControlName="quantity"
+                min="1"
+                [max]="maxQuantity"
+                required
+              />
+              @if (line.controls.quantity.invalid) {
+                <mat-error>Informe um número inteiro de 1 a {{ maxQuantity }}.</mat-error>
+              }
+            </mat-form-field>
 
-          <p class="subtotal">
-            <span class="muted">Subtotal</span>
-            {{ pricedLines()[i]?.subtotal ?? 0 | currency: currency() }}
+            <p class="subtotal">
+              <span class="muted">Subtotal</span>
+              <span class="subtotal-value">{{
+                pricedLines()[i]?.subtotal ?? 0 | currency: currency()
+              }}</span>
+            </p>
+
+            <button
+              mat-button
+              type="button"
+              class="remove"
+              [disabled]="lines.length === 1"
+              (click)="removeLine(i)"
+            >
+              Remover <span class="visually-hidden">item {{ i + 1 }}</span>
+            </button>
+          </div>
+        }
+      </fieldset>
+
+      <div class="card-body add-line">
+        @if (submitted() && lines.hasError('duplicateProduct')) {
+          <p class="form-error" tabindex="-1" role="alert">
+            Cada produto só pode aparecer uma vez; ajuste a quantidade do item repetido.
           </p>
-
-          <button
-            mat-button
-            type="button"
-            class="remove"
-            [disabled]="lines.length === 1"
-            (click)="removeLine(i)"
-          >
-            Remover <span class="visually-hidden">item {{ i + 1 }}</span>
-          </button>
-        </div>
-      }
-    </fieldset>
-
-    @if (submitted() && lines.hasError('duplicateProduct')) {
-      <p class="form-error" tabindex="-1" role="alert">
-        Cada produto só pode aparecer uma vez; ajuste a quantidade do item repetido.
-      </p>
-    }
-    @if (submitted() && lines.hasError('mixedCurrencies')) {
-      <p class="form-error" tabindex="-1" role="alert">
-        Todos os produtos do pedido precisam ter a mesma moeda.
-      </p>
-    }
-
-    <div class="actions">
-      <button
-        mat-stroked-button
-        type="button"
-        [disabled]="lines.length >= maxLines"
-        (click)="addLine()"
-      >
-        Adicionar item
-      </button>
+        }
+        @if (submitted() && lines.hasError('mixedCurrencies')) {
+          <p class="form-error" tabindex="-1" role="alert">
+            Todos os produtos do pedido precisam ter a mesma moeda.
+          </p>
+        }
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="lines.length >= maxLines"
+          (click)="addLine()"
+        >
+          Adicionar item
+        </button>
+      </div>
     </div>
 
-    <p class="total" aria-live="polite">
-      Total do pedido: <strong>{{ total() | currency: currency() }}</strong>
-    </p>
+    <aside class="aside-column card card-body summary" aria-labelledby="order-summary">
+      <h2 id="order-summary">Resumo</h2>
+      <p class="summary-row">
+        <span class="muted">Itens</span>
+        <span>{{ lines.length }}</span>
+      </p>
+      <p class="total" aria-live="polite">
+        Total do pedido: <strong>{{ total() | currency: currency() }}</strong>
+      </p>
 
-    <of-error-alert [error]="submitError()" />
+      <of-error-alert [error]="submitError()" />
 
-    <div class="actions">
-      <button mat-flat-button type="submit" [disabled]="submitting()">
+      <button mat-flat-button type="submit" class="submit" [disabled]="submitting()">
         {{ submitting() ? 'Enviando…' : 'Criar pedido' }}
       </button>
       <a mat-button routerLink="/pedidos">Cancelar</a>
-    </div>
+    </aside>
   </form>
 }

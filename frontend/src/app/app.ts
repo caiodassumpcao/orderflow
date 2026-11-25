@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, skip } from 'rxjs';
@@ -16,6 +23,13 @@ export class App {
   protected readonly auth = inject(AuthService);
   protected readonly appName = APP_NAME;
   protected readonly year = new Date().getFullYear();
+
+  /** Iniciais para o avatar: primeira letra do primeiro e do último nome. */
+  protected readonly initials = computed(() => {
+    const parts = this.auth.displayName().trim().split(/\s+/).filter(Boolean);
+    const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+    return letters.map((part) => part[0].toUpperCase()).join('');
+  });
 
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
 

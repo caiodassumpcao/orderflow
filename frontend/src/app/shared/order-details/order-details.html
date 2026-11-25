@@ -1,57 +1,74 @@
-<dl class="summary">
-  <div>
-    <dt>Status</dt>
-    <dd><of-order-status [status]="order().status" /></dd>
-  </div>
-  <div>
-    <dt>Total</dt>
-    <dd>{{ order().total | currency: order().currency }}</dd>
-  </div>
-  <div>
-    <dt>Criado em</dt>
-    <dd>{{ order().createdAt | date: 'short' }}</dd>
-  </div>
-  <div>
-    <dt>Atualizado em</dt>
-    <dd>{{ order().updatedAt | date: 'short' }}</dd>
-  </div>
-  @if (cancellation(); as reason) {
-    <div class="reason">
-      <dt>Motivo do cancelamento</dt>
-      <dd>{{ reason }}</dd>
-    </div>
-  }
-</dl>
+<div class="with-aside">
+  <div class="main-column stack">
+    <section class="card card-body" aria-labelledby="order-progress">
+      <h2 id="order-progress" class="section-title">Andamento</h2>
+      <of-order-timeline [order]="order()" />
+    </section>
 
-<h2>Itens</h2>
-<div class="table-scroll">
-  <table class="data-table">
-    <caption class="visually-hidden">
-      Itens do pedido
-    </caption>
-    <thead>
-      <tr>
-        <th scope="col">Produto (SKU)</th>
-        <th scope="col" class="numeric">Quantidade</th>
-        <th scope="col" class="numeric">Preço unitário</th>
-        <th scope="col" class="numeric">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (item of order().items; track $index) {
-        <tr>
-          <td>{{ item.sku }}</td>
-          <td class="numeric">{{ item.quantity }}</td>
-          <td class="numeric">{{ item.unitPrice | currency: order().currency }}</td>
-          <td class="numeric">{{ item.total | currency: order().currency }}</td>
-        </tr>
-      }
-    </tbody>
-    <tfoot>
-      <tr>
-        <th scope="row" colspan="3">Total</th>
-        <td class="numeric">{{ order().total | currency: order().currency }}</td>
-      </tr>
-    </tfoot>
-  </table>
+    <section class="card" aria-labelledby="order-items">
+      <div class="card-header">
+        <h2 id="order-items">Itens</h2>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption class="visually-hidden">
+            Itens do pedido
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Produto (SKU)</th>
+              <th scope="col" class="numeric">Qtd.</th>
+              <th scope="col" class="numeric">Preço unitário</th>
+              <th scope="col" class="numeric">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of order().items; track $index) {
+              <tr>
+                <td class="strong">{{ item.sku }}</td>
+                <td class="numeric">{{ item.quantity }}</td>
+                <td class="numeric">{{ item.unitPrice | currency: order().currency }}</td>
+                <td class="numeric strong">{{ item.total | currency: order().currency }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="3" class="numeric">Total</th>
+              <td class="numeric strong">{{ order().total | currency: order().currency }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <aside class="aside-column card card-body summary" aria-labelledby="order-summary">
+    <h2 id="order-summary" class="section-title">Resumo</h2>
+    <dl>
+      <div>
+        <dt>Itens</dt>
+        <dd>{{ order().items.length }} ({{ unitCount() }} un.)</dd>
+      </div>
+      <div>
+        <dt>Criado em</dt>
+        <dd>{{ order().createdAt | date: 'short' }}</dd>
+      </div>
+      <div>
+        <dt>Atualizado em</dt>
+        <dd>{{ order().updatedAt | date: 'short' }}</dd>
+      </div>
+      <div class="total">
+        <dt>Total</dt>
+        <dd>{{ order().total | currency: order().currency }}</dd>
+      </div>
+    </dl>
+    @if (cancellation(); as reason) {
+      <div class="reason">
+        <p class="reason-title">Motivo do cancelamento</p>
+        <p>{{ reason }}</p>
+      </div>
+    }
+    <ng-content />
+  </aside>
 </div>

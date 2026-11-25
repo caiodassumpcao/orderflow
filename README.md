@@ -57,7 +57,7 @@ Cobrir, em um único projeto verificável, as competências esperadas de um(a) d
 | Camada | Tecnologia |
 |---|---|
 | Backend | Java 21 (Temurin), Spring Boot 4.1, Spring Web, Spring Security (OAuth2 Resource Server), Spring Data JPA (Hibernate 7), Spring Kafka (kafka-clients 4.2), Flyway 12, springdoc-openapi 3 |
-| Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), Angular Material/CDK 22 (M3, temas claro e escuro), angular-auth-oidc-client 22 (OIDC + PKCE), TypeScript 6 strict, RxJS 7, Node 24 |
+| Frontend | Angular 22 (standalone, signals, zoneless, `OnPush`), Angular Material/CDK 22 (M3 com a identidade do OrderFlow, temas claro e escuro), Inter e Space Grotesk empacotadas no build, angular-auth-oidc-client 22 (OIDC + PKCE), TypeScript 6 strict, RxJS 7, Node 24 |
 | Banco | PostgreSQL 16 (schemas `command` e `query`) |
 | Mensageria | Apache Kafka 4.4 (KRaft) + Kafka UI (dev) |
 | Auth | Keycloak 26 (OIDC/JWT) |
@@ -360,13 +360,22 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Backend: catálogo para clientes, cadastro de produto e reposição com `If-Match` (V10: nome do produto) e `GET /api/v1/dashboard/summary`.
   - Imagem `orderflow-web` configurada em runtime (`config.json` e CSP gerados das variáveis `ORDERFLOW_*`).
   - E2E com provedor OIDC e API falsos e axe em todas as telas.
-- [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
+- [x] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
   - E2E na stack real no CI (job `e2e-stack`): login no Keycloak, compra confirmada pela saga e enviada, recusa por falta de estoque, cadastro e reposição de produto.
   - Contrato OpenAPI publicado em `docs/openapi.yaml` e verificado no build; SPA e API simulada validados contra ele. Contratos de eventos em JSON Schema, com testes de produtor e consumidor.
   - `docs/accessibility.md` com as verificações automáticas, o resultado do Lighthouse e o roteiro de teste manual com leitor de tela (execução manual, registrada no próprio documento).
   - Mensagem quando o serviço de login está fora do ar; indicador de carregamento estável e com movimento reduzido.
 - [ ] **Fase 7.1 — Design e UX:** revisão visual da plataforma (cabeçalho e navegação, espaçamentos, cards, tabelas, telas de pedido e de operação), mantendo WCAG 2.2 AA e os e2e/axe verdes
   - O indicador de carregamento já foi corrigido na Fase 7 (espaço fixo, sem piscar em respostas rápidas e texto estático com movimento reduzido).
+  - Identidade própria: logotipo, paleta (azul de ação #2B4ACB), Inter no texto e Space Grotesk nos títulos, empacotadas no build (a CSP não muda), sobre o Angular Material.
+  - Telas:
+    - cabeçalho claro com navegação por papel;
+    - listas com filtro em chips, tabela no desktop e cards no celular;
+    - detalhe com linha do tempo da saga e resumo lateral;
+    - criação com resumo e total ao lado;
+    - painel com seletor de período, gráfico de pedidos por dia e estoque baixo.
+  - Tela de login do Keycloak com o tema do OrderFlow e em português (`infra/keycloak/themes/orderflow`). Num realm de dev já importado, ligue o tema e o idioma em Realm settings › Themes e Localization, ou recrie o volume do Keycloak.
+  - Indicadores da área do cliente (total de pedidos e valores por status) ficaram de fora: a API não tem uma consulta agregada por cliente.
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
   - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
   - O dashboard agrega `query.order_summaries` a cada requisição; medir e, se preciso, trocar por uma projeção agregada.

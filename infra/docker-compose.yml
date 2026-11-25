@@ -96,6 +96,8 @@ services:
       # montar um subdiretório inexistente faria o Docker criá-lo como root.
       - keycloak-data:/opt/keycloak/data
       - ./keycloak/realm-orderflow.json:/opt/keycloak/data/import/realm-orderflow.json:ro
+      # Tema de login do OrderFlow (Fase 7.1); o start-dev não guarda tema em cache.
+      - ./keycloak/themes/orderflow:/opt/keycloak/themes/orderflow:ro
     healthcheck:
       # A imagem não tem curl/wget: usa /dev/tcp do bash na porta de management (9000).
       test:

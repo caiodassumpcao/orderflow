@@ -1,34 +1,54 @@
-<h1>OrderFlow</h1>
-<p class="lead">Gestão de pedidos orientada a eventos.</p>
+<section class="hero card" aria-labelledby="home-title">
+  <p class="overline">Plataforma de pedidos</p>
+  <h1 id="home-title">OrderFlow</h1>
+  <p class="lead">Gestão de pedidos orientada a eventos.</p>
+
+  @if (auth.isAuthenticated()) {
+    <p class="greeting">
+      Olá{{ auth.displayName() ? ', ' + auth.displayName() : '' }}! O que você quer fazer agora?
+    </p>
+  } @else {
+    <p class="intro">
+      Crie pedidos, acompanhe a reserva de estoque em tempo real e, na operação, envie pedidos e
+      reponha o estoque. Entre com sua conta para começar.
+    </p>
+    <button mat-flat-button type="button" (click)="auth.login()">Entrar</button>
+  }
+</section>
 
 @if (auth.isAuthenticated()) {
-  <p>Olá{{ auth.displayName() ? ', ' + auth.displayName() : '' }}! O que você quer fazer agora?</p>
   <ul class="shortcuts">
     @if (auth.isCustomer()) {
-      <li>
+      <li class="card">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
         <a routerLink="/pedidos/novo">Fazer um pedido</a>
         <span class="muted">Escolha produtos do catálogo com o preço atual.</span>
       </li>
-      <li>
+      <li class="card">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h10" />
+        </svg>
         <a routerLink="/pedidos">Acompanhar meus pedidos</a>
         <span class="muted">Status de cada pedido, da reserva de estoque ao envio.</span>
       </li>
     }
     @if (auth.isAdmin()) {
-      <li>
+      <li class="card">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 20V10M12 20V4M19 20v-7" />
+        </svg>
         <a routerLink="/admin">Painel da operação</a>
         <span class="muted">Pedidos por status, receita confirmada e pedidos por dia.</span>
       </li>
-      <li>
+      <li class="card">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 8l8-4 8 4-8 4-8-4zM4 8v8l8 4 8-4V8" />
+        </svg>
         <a routerLink="/admin/estoque">Estoque</a>
         <span class="muted">Cadastro de produtos e reposição.</span>
       </li>
     }
   </ul>
-} @else {
-  <p>
-    Crie pedidos, acompanhe a reserva de estoque em tempo real e, na operação, envie pedidos e
-    reponha o estoque. Entre com sua conta para começar.
-  </p>
-  <button mat-flat-button type="button" (click)="auth.login()">Entrar</button>
 }

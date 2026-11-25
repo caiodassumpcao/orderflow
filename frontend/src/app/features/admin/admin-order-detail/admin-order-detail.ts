@@ -24,6 +24,7 @@ import {
 import { ErrorAlert } from '../../../shared/error-alert/error-alert';
 import { LoadingIndicator } from '../../../shared/loading-indicator/loading-indicator';
 import { OrderDetails } from '../../../shared/order-details/order-details';
+import { OrderStatusBadge } from '../../../shared/order-status/order-status';
 
 @Component({
   selector: 'of-admin-order-detail',
@@ -34,8 +35,23 @@ import { OrderDetails } from '../../../shared/order-details/order-details';
     ErrorAlert,
     LoadingIndicator,
     OrderDetails,
+    OrderStatusBadge,
   ],
   templateUrl: './admin-order-detail.html',
+  styles: `
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.875rem;
+    }
+    h1 {
+      font-variant-numeric: tabular-nums;
+    }
+    .customer {
+      overflow-wrap: anywhere;
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminOrderDetail implements OnInit {

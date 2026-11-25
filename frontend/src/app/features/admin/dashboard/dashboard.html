@@ -1,23 +1,42 @@
 <div class="page-header">
-  <h1>Painel da operação</h1>
-  <button mat-stroked-button type="button" [disabled]="loading()" (click)="refresh()">
-    Atualizar
-  </button>
+  <div>
+    <p class="overline">Operação</p>
+    <h1>Painel da operação</h1>
+    @if (summary(); as summary) {
+      <p class="subtitle">
+        Últimos {{ days() }} dias · fuso {{ summary.timeZone }} · atualizado às
+        {{ summary.generatedAt | date: 'HH:mm' }}
+      </p>
+    }
+  </div>
+  <div class="actions">
+    <mat-form-field subscriptSizing="dynamic" class="period">
+      <mat-label>Período</mat-label>
+      <select matNativeControl #period (change)="changePeriod(period.value)">
+        @for (option of periods; track option) {
+          <option [value]="option" [selected]="option === days()">Últimos {{ option }} dias</option>
+        }
+      </select>
+    </mat-form-field>
+    <button mat-stroked-button type="button" [disabled]="loading()" (click)="refresh()">
+      Atualizar
+    </button>
+  </div>
 </div>
 
 <of-loading-indicator [active]="loading()" label="Carregando o painel" />
 <of-error-alert [error]="error()" />
 
 @if (summary(); as summary) {
-  <p class="muted">
-    Atualizado em {{ summary.generatedAt | date: 'short' }} · dias no fuso {{ summary.timeZone }}.
+  <p class="visually-hidden">
     Os números refletem o modelo de leitura e podem ter alguns segundos de atraso.
   </p>
 
-  <ul class="cards" aria-label="Indicadores">
+  <ul class="kpis" aria-label="Indicadores">
     <li>
-      <span class="label">Pedidos</span>
-      <span class="value">{{ summary.totalOrders | number }}</span>
+      <span class="label">Pedidos no período</span>
+      <span class="value">{{ periodOrders() | number }}</span>
+      <span class="hint">{{ summary.totalOrders | number }} no total</span>
     </li>
     <li>
       <span class="label">Receita confirmada</span>
@@ -26,12 +45,14 @@
       } @empty {
         <span class="value">{{ 0 | currency }}</span>
       }
+      <span class="hint">Pedidos confirmados e enviados</span>
     </li>
     <li>
       <span class="label">Aguardando estoque</span>
       <span class="value">{{ awaitingStock() | number }}</span>
+      <span class="hint">Saga em andamento</span>
     </li>
-    <li>
+    <li class="strong">
       <span class="label">Prontos para envio</span>
       <span class="value">{{ summary.ordersByStatus.CONFIRMED | number }}</span>
       <a routerLink="/admin/pedidos">Ver pedidos</a>
@@ -39,50 +60,96 @@
   </ul>
 
   <div class="panels">
-    <section aria-labelledby="by-status">
-      <h2 id="by-status">Pedidos por status</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Status</th>
-            <th scope="col" class="numeric">Pedidos</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of statusRows(); track row.status) {
-            <tr>
-              <th scope="row">{{ statusLabels[row.status] }}</th>
-              <td class="numeric">{{ row.count | number }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <section class="card card-body chart-card" aria-labelledby="by-day">
+      <div class="chart-header">
+        <h2 id="by-day">Pedidos por dia</h2>
+        <span class="legend" aria-hidden="true">
+          <span><span class="swatch orders"></span>Pedidos</span>
+          <span><span class="swatch cancelled"></span>Cancelados</span>
+        </span>
+      </div>
+      <ol
+        class="bars"
+        [style.grid-template-columns]="'repeat(' + dailyBars().length + ', minmax(0, 1fr))'"
+        aria-label="Pedidos e cancelados por dia"
+      >
+        @for (day of dailyBars(); track day.date) {
+          <li>
+            <span class="bar-value" aria-hidden="true">{{ day.orders }}</span>
+            <span class="bar" aria-hidden="true" [style.height.%]="day.height">
+              <span class="bar-cancelled" [style.height.%]="day.cancelledShare"></span>
+            </span>
+            <span class="visually-hidden"
+              >{{ day.date | date: 'EEEE, dd/MM' : 'UTC' }}{{ day.today ? ' (hoje)' : '' }}:
+              {{ day.orders }} {{ day.orders === 1 ? 'pedido' : 'pedidos' }},
+              {{ day.cancelled }}
+              {{ day.cancelled === 1 ? 'cancelado' : 'cancelados' }}</span
+            >
+          </li>
+        }
+      </ol>
+      <div
+        class="axis"
+        aria-hidden="true"
+        [style.grid-template-columns]="'repeat(' + dailyBars().length + ', minmax(0, 1fr))'"
+      >
+        @for (day of dailyBars(); track day.date) {
+          <span [class.today]="day.today">{{
+            day.showLabel ? (day.today ? 'hoje' : (day.date | date: 'EEE dd' : 'UTC')) : ''
+          }}</span>
+        }
+      </div>
     </section>
 
-    <section aria-labelledby="by-day">
-      <h2 id="by-day">Pedidos nos últimos {{ days }} dias</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Dia</th>
-            <th scope="col" class="numeric">Pedidos</th>
-            <th scope="col" class="numeric">Cancelados</th>
-            <th scope="col"><span class="visually-hidden">Gráfico</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (day of dailyRows(); track day.date) {
-            <tr>
-              <th scope="row">{{ day.date | date: 'EEE, dd/MM' : 'UTC' }}</th>
-              <td class="numeric">{{ day.orders | number }}</td>
-              <td class="numeric">{{ day.cancelled | number }}</td>
-              <td class="bar-cell" aria-hidden="true">
-                <span class="bar" [style.width.%]="day.percent"></span>
-              </td>
-            </tr>
+    <section class="card card-body" aria-labelledby="by-status">
+      <h2 id="by-status" class="section-title">Por status</h2>
+      <div class="distribution" aria-hidden="true">
+        @for (row of statusRows(); track row.status) {
+          @if (row.count > 0) {
+            <span [class]="'segment ' + row.tone" [style.flex-grow]="row.count"></span>
           }
-        </tbody>
-      </table>
+        }
+      </div>
+      <ul class="status-list">
+        @for (row of statusRows(); track row.status) {
+          <li>
+            <span class="status-name"
+              ><span [class]="'dot ' + row.tone" aria-hidden="true"></span>{{ row.label }}</span
+            >
+            <span class="status-count">{{ row.count | number }}</span>
+          </li>
+        }
+      </ul>
     </section>
   </div>
+
+  <section class="card" aria-labelledby="low-stock">
+    <div class="card-header">
+      <h2 id="low-stock">Estoque baixo</h2>
+      <a routerLink="/admin/estoque">Ver estoque completo</a>
+    </div>
+    @if (lowStock(); as items) {
+      @if (items.length === 0) {
+        <p class="card-body empty">Nenhum produto com {{ lowThreshold }} unidades ou menos.</p>
+      } @else {
+        <ul class="stock-list">
+          @for (item of items; track item.sku) {
+            <li>
+              <span class="stock-name">
+                <span class="strong">{{ item.name }}</span>
+                <span class="muted"
+                  >{{ item.sku }} · {{ item.unitPrice | currency: item.currency }}</span
+                >
+              </span>
+              <span [class]="item.available === 0 ? 'stock-badge out' : 'stock-badge low'">
+                {{ item.available === 0 ? 'Esgotado' : item.available + ' disponíveis' }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <p class="card-body empty">Não foi possível carregar o estoque.</p>
+    }
+  </section>
 }

@@ -1,0 +1,76 @@
+/*
+ * Identidade do OrderFlow na tela de login (Fase 7.1), sobre o keycloak.v2.
+ * Mesmas cores da SPA, com contraste WCAG 2.2 AA nos temas claro e escuro. Sem fontes externas:
+ * a pilha de fontes do sistema evita carregar arquivos de outra origem.
+ */
+:root {
+  --of-bg: #f6f7fb;
+  --of-surface: #ffffff;
+  --of-ink: #101828;
+  --of-border: #e3e6ee;
+  --of-primary: #2b4acb;
+  --of-primary-hover: #1e3696;
+
+  --pf-v5-global--primary-color--100: var(--of-primary);
+  --pf-v5-global--primary-color--200: var(--of-primary-hover);
+  --pf-v5-global--link--Color: var(--of-primary);
+  --pf-v5-global--link--Color--hover: var(--of-primary-hover);
+  --pf-v5-global--FontFamily--text: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --pf-v5-global--FontFamily--heading: Inter, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --pf-v5-c-button--BorderRadius: 10px;
+  --keycloak-card-top-color: var(--of-primary);
+}
+
+html.pf-v5-theme-dark {
+  --of-bg: #0e1320;
+  --of-surface: #161c2b;
+  --of-ink: #eef1f7;
+  --of-border: #2a3347;
+  --of-primary: #9db2ff;
+  --of-primary-hover: #c1ceff;
+
+  --pf-v5-c-button--m-primary--Color: #0b1530;
+  --pf-v5-c-button--m-primary--hover--Color: #0b1530;
+}
+
+/* Fundo liso no lugar da imagem padrão do Keycloak */
+.login-pf body,
+body#keycloak-bg {
+  background: var(--of-bg);
+}
+
+/*
+ * O keycloak.v2 pinta o nome do realm de branco (pensado para o fundo escuro padrão), com
+ * !important sobre esta variável: redefini-la no elemento troca a cor sem outro !important.
+ */
+#kc-header-wrapper {
+  --pf-v5-global--Color--light-100: var(--of-ink);
+}
+
+#kc-header #kc-header-wrapper {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.pf-v5-c-login__main {
+  overflow: hidden;
+  border: 1px solid var(--of-border);
+  border-radius: 12px;
+  background: var(--of-surface);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.pf-v5-c-form-control {
+  border-radius: 10px;
+}
+
+.pf-v5-c-button {
+  --pf-v5-c-button--BorderRadius: 10px;
+}
+
+.pf-v5-c-button.pf-m-primary {
+  font-weight: 600;
+}
