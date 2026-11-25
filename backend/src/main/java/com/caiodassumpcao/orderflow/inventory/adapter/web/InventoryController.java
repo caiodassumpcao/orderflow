@@ -3,17 +3,19 @@ package com.caiodassumpcao.orderflow.inventory.adapter.web;
 import com.caiodassumpcao.orderflow.inventory.application.InventoryQueryService;
 import com.caiodassumpcao.orderflow.inventory.domain.Sku;
 import com.caiodassumpcao.orderflow.inventory.domain.StockItem;
+import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Consulta de estoque. Restrita ao papel ADMIN a partir da Fase 5. */
+/** Consulta de estoque (papel ADMIN). */
 @RestController
 @RequestMapping(path = "/api/v1/inventory", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Inventory", description = "Estoque e preço de catálogo")
@@ -26,6 +28,7 @@ class InventoryController {
   }
 
   @GetMapping("/{sku}")
+  @PreAuthorize(Roles.HAS_ADMIN)
   @Operation(summary = "Preço e quantidades de um produto")
   StockItemResponse getStock(
       @PathVariable

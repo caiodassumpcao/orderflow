@@ -6,6 +6,7 @@ import com.caiodassumpcao.orderflow.orders.application.PlaceOrderResult;
 import com.caiodassumpcao.orderflow.orders.domain.CustomerId;
 import com.caiodassumpcao.orderflow.orders.domain.Order;
 import com.caiodassumpcao.orderflow.orders.domain.OrderId;
+import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +16,7 @@ import java.net.URI;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +45,7 @@ class OrderCommandController {
   }
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PreAuthorize(Roles.HAS_USER)
   @Operation(
       summary = "Cria um pedido",
       description =
@@ -74,6 +77,7 @@ class OrderCommandController {
   }
 
   @PostMapping("/{orderId}/cancel")
+  @PreAuthorize(Roles.HAS_USER)
   @Operation(summary = "Cancela um pedido do próprio cliente (antes da confirmação)")
   ResponseEntity<OrderResponse> cancelOrder(
       @AuthenticationPrincipal Jwt jwt,
@@ -85,7 +89,8 @@ class OrderCommandController {
   }
 
   @PostMapping("/{orderId}/ship")
-  @Operation(summary = "Marca um pedido confirmado como enviado (papel ADMIN a partir da Fase 5)")
+  @PreAuthorize(Roles.HAS_ADMIN)
+  @Operation(summary = "Marca um pedido confirmado como enviado (papel ADMIN)")
   ResponseEntity<OrderResponse> shipOrder(@PathVariable UUID orderId) {
     return ResponseEntity.ok(OrderResponse.of(service.shipOrder(new OrderId(orderId))));
   }

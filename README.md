@@ -204,9 +204,11 @@ Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (so
 | GET | `/api/v1/orders` | Lista paginada, filtros e ordenação | USER |
 | GET | `/api/v1/orders/{id}` | Detalhe do pedido | USER |
 | GET | `/api/v1/inventory/{sku}` | Consulta estoque | ADMIN |
+| GET | `/api/v1/admin/orders` | Todos os pedidos, com o cliente; filtros por cliente e status | ADMIN |
+| GET | `/api/v1/admin/orders/{id}` | Detalhe de qualquer pedido, com o cliente | ADMIN |
 | GET | `/api/v1/dashboard/summary` | Métricas agregadas | ADMIN |
 
-Implementados: os três `POST` (Fase 1), as duas consultas `GET` de pedidos (Fase 3) e a consulta de estoque (Fase 4). O dashboard chega na Fase 6 e o controle por papel (`USER`/`ADMIN`) na Fase 5: hoje qualquer usuário autenticado pode enviar um pedido e consultar estoque; cancelamento e consultas de pedidos já são restritos ao dono, e a visão de administrador (todos os pedidos) entra com o RBAC.
+Implementados todos os endpoints da tabela, exceto o dashboard (Fase 6). A coluna **Papel** é exigida pela API (Fase 5): cada endpoint declara o papel com `@PreAuthorize` e um token sem o papel recebe 403. Cancelamento e consultas de pedidos de `USER` são restritos ao dono; outro cliente recebe 404. Comandos (`POST`) são limitados por usuário: rajada de 30, repostos em 1 minuto; acima disso, 429 com `Retry-After`.
 
 **Ciclo do pedido (saga, [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)):** o `POST` responde `CREATED`; em seguida o inventário reserva o estoque e o pedido vira `CONFIRMED`, ou o recusa (sem estoque, SKU inexistente ou preço/moeda diferente do catálogo) e o pedido vira `CANCELLED` com o motivo em `cancellationReason`. Só pedidos `CONFIRMED` podem ser enviados; o cancelamento pelo cliente vale enquanto o pedido está `CREATED`.
 
@@ -272,13 +274,14 @@ Meta **WCAG 2.2 nível AA**.
 
 ## 12. Segurança
 
-- **AuthN/AuthZ:** OIDC via Keycloak, JWT validado no backend, RBAC (`USER`, `ADMIN`), autorização no nível de método e verificação de propriedade do recurso.
+- **AuthN/AuthZ** ([ADR-0005](docs/adr/0005-keycloak-identity.md)): OIDC via Keycloak (Authorization Code + PKCE na SPA). O JWT é validado no backend (assinatura, expiração, emissor e cliente autorizado `azp`). RBAC com os papéis do realm (`USER`, `ADMIN`) declarados em cada endpoint com `@PreAuthorize`; uma regra do ArchUnit falha o build para endpoints sem papel. A propriedade do recurso é verificada nos casos de uso.
 - **Validação** de entrada em todas as bordas; sem SQL dinâmico concatenado.
 - **Headers:** CSP, HSTS, X-Content-Type-Options, Referrer-Policy; CORS restrito por ambiente.
 - **Segredos** via variáveis de ambiente; `.env.example` sem valores reais; scan com gitleaks.
 - **Supply chain:** Dependabot, OWASP Dependency-Check, Trivy (imagens), CodeQL (SAST).
 - **Containers:** imagens mínimas, usuário não-root, `read_only` quando possível.
-- **Rate limiting** nos endpoints de escrita e logs sem dados sensíveis (PII mascarada).
+- **Rate limiting** por usuário nos comandos (token bucket em memória, por instância; 429 com `Retry-After`) e logs sem payloads de mensagens nem segredos.
+- **Superfície pública:** só os probes `/actuator/health/liveness` e `/readiness`, sem detalhes; health completo, métricas e Swagger exigem token fora do perfil `dev`.
 - Política de divulgação em [`SECURITY.md`](SECURITY.md). Base: OWASP ASVS e Top 10.
 
 ## 13. Observabilidade
@@ -294,7 +297,8 @@ Meta **WCAG 2.2 nível AA**.
 - **`codeql.yml`** (PR, push e semanal): SAST de Java, TypeScript e Actions.
 - **Dependabot** semanal para actions, Maven, npm e imagens base.
 - Actions fixadas por SHA de commit; token do workflow somente leitura por padrão.
-- OWASP Dependency-Check entra na Fase 5. Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits), na Fase 10.
+- **`dependency-check.yml`** (semanal, manual e em PRs que mudam o `pom.xml`): OWASP Dependency-Check das dependências de produção, falhando com CVSS ≥ 7 e publicando no code scanning. Precisa do secret `NVD_API_KEY`; sem ele, o job avisa e termina.
+- Release: tag semântica `vX.Y.Z` publica imagens e changelog (Conventional Commits), na Fase 10.
 
 ## 15. Git Flow e convenções
 
@@ -316,13 +320,13 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
   - Projector tolerante a eventos repetidos e fora de ordem (via `aggregateVersion`), com teste dedicado; consultas restritas ao dono.
   - Índices além do da paginação keyset ficam para o estudo da Fase 8.
-- [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
+- [x] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
   - Saga coreografada entre pedidos e inventário; o inventário é a fonte de verdade do preço e recusa pedidos com preço ou moeda diferentes do catálogo ([ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)).
   - Ainda não há endpoint para cadastrar produtos ou repor estoque (em dev há um estoque de demonstração); entra com as telas de administração (Fase 6), protegido pelo RBAC da Fase 5.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
-  - Exigir o papel `ADMIN` em `POST /api/v1/orders/{id}/ship` e `GET /api/v1/inventory/{sku}` (hoje basta estar autenticado).
-  - Decidir se `/actuator/health/{liveness,readiness}` fica público fora do perfil `dev` (sem detalhes) e, se sim, adicionar `HEALTHCHECK` à imagem da API. Hoje o health exige token em produção.
-  - Adicionar o OWASP Dependency-Check ao CI.
+  - RBAC com os papéis do Keycloak em todos os endpoints, visão de administrador (`/api/v1/admin/orders`), validação do cliente do token (`azp`) e rate limit por usuário nos comandos.
+  - Probes `liveness`/`readiness` públicos e sem detalhes; `HEALTHCHECK` na imagem da API.
+  - OWASP Dependency-Check no CI (`dependency-check.yml`); requer o secret `NVD_API_KEY`.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
 - [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
@@ -336,6 +340,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Remover os overrides de `lz4-java` e `snappy-java` no `backend/pom.xml` quando o Spring Boot gerenciar versões corrigidas.
   - Voltar a imagem do nginx para a linha estável (1.30.7+ ou sucessora) quando houver imagem publicada; hoje usa a mainline 1.31.7 por causa de CVEs críticas na 1.30.6.
   - Revisar CSP, headers e CORS de produção; revisão OWASP ASVS / Top 10; atualizar `SECURITY.md`.
+  - Rate limit distribuído (ex.: Redis) se a API rodar com mais de uma instância; o atual vale por instância.
   - Tag `v1.0.0`, publicação das imagens e changelog.
 
 ## 17. Decisões arquiteturais (ADRs)
@@ -346,7 +351,7 @@ Registradas em `docs/adr/` (formato MADR). Iniciais:
 - [ADR-0002](docs/adr/0002-cqrs-event-projections.md): CQRS com projeções por eventos
 - [ADR-0003](docs/adr/0003-transactional-outbox.md): Transactional Outbox em vez de dual-write
 - [ADR-0004](docs/adr/0004-kafka-kraft.md): Kafka (KRaft) como broker
-- ADR-0005: Keycloak para identidade
+- [ADR-0005](docs/adr/0005-keycloak-identity.md): Keycloak para identidade
 - [ADR-0006](docs/adr/0006-keyset-pagination.md): Paginação keyset nas listagens grandes
 - [ADR-0007](docs/adr/0007-non-blocking-retry.md): Retry não bloqueante por consumer, com DLQ
 - [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md): Saga coreografada de estoque, com o preço validado pelo inventário

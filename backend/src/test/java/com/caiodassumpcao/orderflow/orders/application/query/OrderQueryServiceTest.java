@@ -27,62 +27,73 @@ class OrderQueryServiceTest {
   /** Modelo de leitura em memória com a mesma ordenação e filtros do adapter. */
   private static final class InMemoryReadModel implements OrderReadModel {
 
-    private final List<Owned> rows = new ArrayList<>();
+    private static final Comparator<OrderSummary> NEWEST_FIRST =
+        Comparator.comparing(OrderSummary::createdAt)
+            .thenComparing(s -> s.id().value().toString())
+            .reversed();
+
+    private final List<OrderDetail> rows = new ArrayList<>();
     private int lastLimit;
 
-    record Owned(CustomerId owner, OrderDetail detail) {}
-
+    /** Guarda o pedido como sendo do cliente informado. */
     void add(CustomerId owner, OrderSummary summary) {
-      rows.add(new Owned(owner, new OrderDetail(summary, List.of(), null)));
+      OrderSummary owned =
+          new OrderSummary(
+              summary.id(),
+              owner,
+              summary.status(),
+              summary.currency(),
+              summary.total(),
+              summary.itemCount(),
+              summary.createdAt(),
+              summary.updatedAt());
+      rows.add(new OrderDetail(owned, List.of(), null));
     }
 
     @Override
     public List<OrderSummary> findOrders(
-        CustomerId customerId,
+        Optional<CustomerId> customerId,
         Optional<OrderStatus> status,
         Optional<PageCursor> after,
         int limit) {
       lastLimit = limit;
-      Comparator<OrderSummary> newestFirst =
-          Comparator.comparing(OrderSummary::createdAt)
-              .thenComparing(s -> s.id().value().toString())
-              .reversed();
       return rows.stream()
-          .filter(r -> r.owner().equals(customerId))
-          .map(r -> r.detail().summary())
+          .map(OrderDetail::summary)
+          .filter(s -> customerId.map(c -> c.equals(s.customerId())).orElse(true))
           .filter(s -> status.map(st -> st == s.status()).orElse(true))
-          .filter(s ->
-              after
-                  .map(c ->
-                      newestFirst.compare(
-                              s,
-                              new OrderSummary(
-                                  c.orderId(),
-                                  s.status(),
-                                  s.currency(),
-                                  s.total(),
-                                  0,
-                                  c.createdAt(),
-                                  c.createdAt()))
-                          > 0)
-                  .orElse(true))
-          .sorted(newestFirst)
+          .filter(s -> after.map(c -> isAfter(s, c)).orElse(true))
+          .sorted(NEWEST_FIRST)
           .limit(limit)
           .toList();
     }
 
     @Override
-    public Optional<OrderDetail> findOrder(OrderId orderId, CustomerId customerId) {
+    public Optional<OrderDetail> findOrder(OrderId orderId, Optional<CustomerId> customerId) {
       return rows.stream()
-          .filter(r -> r.owner().equals(customerId) && r.detail().summary().id().equals(orderId))
-          .map(Owned::detail)
+          .filter(d -> d.summary().id().equals(orderId))
+          .filter(d -> customerId.map(c -> c.equals(d.summary().customerId())).orElse(true))
           .findFirst();
+    }
+
+    private static boolean isAfter(OrderSummary summary, PageCursor cursor) {
+      OrderSummary cursorRow =
+          new OrderSummary(
+              cursor.orderId(),
+              summary.customerId(),
+              summary.status(),
+              summary.currency(),
+              summary.total(),
+              0,
+              cursor.createdAt(),
+              cursor.createdAt());
+      return NEWEST_FIRST.compare(summary, cursorRow) > 0;
     }
   }
 
   private static OrderSummary summary(int minute, OrderStatus status) {
     return new OrderSummary(
         new OrderId(UUID.randomUUID()),
+        ALICE,
         status,
         Currency.getInstance("BRL"),
         BigDecimal.TEN,
@@ -162,6 +173,39 @@ class OrderQueryServiceTest {
         .isInstanceOf(OrderNotFoundException.class);
     assertThatThrownBy(() -> service.getOrder(new OrderId(UUID.randomUUID()), ALICE))
         .isInstanceOf(OrderNotFoundException.class);
+  }
+
+  @Test
+  void letsTheAdminListEveryCustomerOrFilterByOne() {
+    readModel.add(ALICE, summary(0, OrderStatus.CREATED));
+    readModel.add(new CustomerId("bob"), summary(1, OrderStatus.CREATED));
+
+    OrderPage all =
+        service.listAllOrders(
+            new AdminOrderListQuery(Optional.empty(), Optional.empty(), 10, Optional.empty()));
+    OrderPage bobs =
+        service.listAllOrders(
+            new AdminOrderListQuery(
+                Optional.of(new CustomerId("bob")), Optional.empty(), 10, Optional.empty()));
+
+    assertThat(all.items()).hasSize(2);
+    assertThat(bobs.items())
+        .singleElement()
+        .satisfies(s -> assertThat(s.customerId()).isEqualTo(new CustomerId("bob")));
+  }
+
+  @Test
+  void letsTheAdminReadAnyOrder() {
+    OrderSummary bobs = summary(0, OrderStatus.CREATED);
+    readModel.add(new CustomerId("bob"), bobs);
+
+    assertThat(service.getAnyOrder(bobs.id()).summary().customerId())
+        .isEqualTo(new CustomerId("bob"));
+    assertThatThrownBy(() -> service.getAnyOrder(new OrderId(UUID.randomUUID())))
+        .isInstanceOf(OrderNotFoundException.class);
+    assertThatThrownBy(
+            () -> new AdminOrderListQuery(Optional.empty(), Optional.empty(), 0, Optional.empty()))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

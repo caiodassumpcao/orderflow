@@ -1,0 +1,67 @@
+name: Dependency-Check
+
+# OWASP Dependency-Check das dependências Maven. Precisa do secret NVD_API_KEY (chave gratuita do
+# NVD); sem ele, o job avisa e termina sem falhar. Semanal, manual e em PRs que mudam o pom.xml.
+on:
+  schedule:
+    - cron: '41 5 * * 1'
+  workflow_dispatch:
+  pull_request:
+    branches: [main, develop]
+    paths: ['backend/pom.xml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: OWASP Dependency-Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+    steps:
+      - name: Verificar a chave do NVD
+        if: ${{ env.NVD_API_KEY == '' }}
+        run: echo "::warning::Secret NVD_API_KEY não configurado; Dependency-Check não executado."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ env.NVD_API_KEY != '' }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        if: ${{ env.NVD_API_KEY != '' }}
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # A base do NVD leva minutos para baixar do zero; o cache guarda a última versão.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ env.NVD_API_KEY != '' }}
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-data-${{ github.run_id }}
+          restore-keys: dependency-check-data-
+      - name: Dependency-Check (falha com CVSS >= 7)
+        if: ${{ env.NVD_API_KEY != '' }}
+        working-directory: backend
+        run: ./mvnw -B -ntp org.owasp:dependency-check-maven:check
+      - name: Publicar no code scanning
+        if: ${{ env.NVD_API_KEY != '' && !cancelled() }}
+        uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          sarif_file: backend/target/dependency-check-report.sarif
+          category: dependency-check
+      - name: Relatório HTML
+        if: ${{ env.NVD_API_KEY != '' && !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dependency-check-report
+          path: backend/target/dependency-check-report.html
+          retention-days: 14

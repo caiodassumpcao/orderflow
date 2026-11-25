@@ -77,12 +77,13 @@ class OrderReadModelIT {
     OrderId id = new OrderId(UUID.randomUUID());
 
     apply(status(id, 1, OrderStatus.CANCELLED, "changed my mind"));
-    assertThat(readModel.findOrder(id, customer)).isEmpty();
-    assertThat(readModel.findOrders(customer, Optional.empty(), Optional.empty(), 10)).isEmpty();
+    assertThat(readModel.findOrder(id, Optional.of(customer))).isEmpty();
+    assertThat(readModel.findOrders(Optional.of(customer), Optional.empty(), Optional.empty(), 10))
+        .isEmpty();
 
     apply(created(id, customer, T0));
 
-    OrderDetail detail = readModel.findOrder(id, customer).orElseThrow();
+    OrderDetail detail = readModel.findOrder(id, Optional.of(customer)).orElseThrow();
     assertThat(detail.summary().status()).isEqualTo(OrderStatus.CANCELLED);
     assertThat(detail.cancellationReason()).isEqualTo("changed my mind");
     assertThat(detail.summary().createdAt()).isEqualTo(T0);
@@ -101,7 +102,7 @@ class OrderReadModelIT {
     apply(status(id, 2, OrderStatus.SHIPPED, null));
     apply(status(id, 1, OrderStatus.CONFIRMED, null));
 
-    OrderSummary summary = readModel.findOrder(id, customer).orElseThrow().summary();
+    OrderSummary summary = readModel.findOrder(id, Optional.of(customer)).orElseThrow().summary();
     assertThat(summary.status()).isEqualTo(OrderStatus.SHIPPED);
     assertThat(summary.updatedAt()).isEqualTo(T0.plusSeconds(2));
   }
@@ -114,8 +115,9 @@ class OrderReadModelIT {
     apply(created(id, customer, T0));
     apply(created(id, customer, T0));
 
-    assertThat(readModel.findOrder(id, customer).orElseThrow().items()).hasSize(2);
-    assertThat(readModel.findOrders(customer, Optional.empty(), Optional.empty(), 10)).hasSize(1);
+    assertThat(readModel.findOrder(id, Optional.of(customer)).orElseThrow().items()).hasSize(2);
+    assertThat(readModel.findOrders(Optional.of(customer), Optional.empty(), Optional.empty(), 10))
+        .hasSize(1);
   }
 
   @Test
@@ -125,8 +127,31 @@ class OrderReadModelIT {
     apply(created(id, alice, T0));
 
     CustomerId mallory = newCustomer();
-    assertThat(readModel.findOrder(id, mallory)).isEmpty();
-    assertThat(readModel.findOrders(mallory, Optional.empty(), Optional.empty(), 10)).isEmpty();
+    assertThat(readModel.findOrder(id, Optional.of(mallory))).isEmpty();
+    assertThat(readModel.findOrders(Optional.of(mallory), Optional.empty(), Optional.empty(), 10))
+        .isEmpty();
+  }
+
+  @Test
+  void letsTheAdminViewSeeEveryCustomerAndFilterByOne() {
+    CustomerId alice = newCustomer();
+    CustomerId bob = newCustomer();
+    OrderId aliceOrder = new OrderId(UUID.randomUUID());
+    OrderId bobOrder = new OrderId(UUID.randomUUID());
+    apply(created(aliceOrder, alice, T0));
+    apply(created(bobOrder, bob, T0.plusSeconds(1)));
+    apply(status(new OrderId(UUID.randomUUID()), 1, OrderStatus.CANCELLED, null));
+
+    assertThat(readModel.findOrder(bobOrder, Optional.empty()))
+        .get()
+        .satisfies(detail -> assertThat(detail.summary().customerId()).isEqualTo(bob));
+    assertThat(readModel.findOrders(Optional.of(alice), Optional.empty(), Optional.empty(), 10))
+        .extracting(OrderSummary::id)
+        .containsExactly(aliceOrder);
+    assertThat(readModel.findOrders(Optional.empty(), Optional.empty(), Optional.empty(), 500))
+        .extracting(OrderSummary::id)
+        .contains(aliceOrder, bobOrder)
+        .allSatisfy(id -> assertThat(id).isNotNull());
   }
 
   @Test
@@ -144,7 +169,8 @@ class OrderReadModelIT {
     List<OrderSummary> seen = new ArrayList<>();
     Optional<PageCursor> cursor = Optional.empty();
     do {
-      List<OrderSummary> page = readModel.findOrders(customer, Optional.empty(), cursor, 3);
+      List<OrderSummary> page =
+          readModel.findOrders(Optional.of(customer), Optional.empty(), cursor, 3);
       seen.addAll(page);
       cursor =
           page.size() < 3
@@ -162,7 +188,7 @@ class OrderReadModelIT {
                 .reversed());
     assertThat(
             readModel.findOrders(
-                customer, Optional.of(OrderStatus.CANCELLED), Optional.empty(), 10))
+                Optional.of(customer), Optional.of(OrderStatus.CANCELLED), Optional.empty(), 10))
         .extracting(OrderSummary::id)
         .containsExactly(ids.get(3));
   }

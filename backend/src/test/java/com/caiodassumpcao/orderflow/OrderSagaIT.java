@@ -1,7 +1,6 @@
 package com.caiodassumpcao.orderflow;
 
 import static org.awaitility.Awaitility.await;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,7 +37,7 @@ class OrderSagaIT {
   @Autowired private JsonMapper json;
 
   private static JwtRequestPostProcessor as(String subject) {
-    return jwt().jwt(token -> token.subject(subject));
+    return TestTokens.customer(subject);
   }
 
   /** Produto exclusivo do teste, para que os testes não disputem o mesmo estoque. */
@@ -93,7 +92,7 @@ class OrderSagaIT {
     String id = placeOrder(customer, sku, 3, "19.90");
 
     awaitOrder(customer, id, "CONFIRMED");
-    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(jwt()))
+    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(TestTokens.admin("ops")))
         .andExpect(jsonPath("$.available").value(7))
         .andExpect(jsonPath("$.reserved").value(3));
   }
@@ -109,7 +108,7 @@ class OrderSagaIT {
     mvc.perform(get("/api/v1/orders/{id}", id).with(as(customer)))
         .andExpect(
             jsonPath("$.cancellationReason").value("Stock rejected: OUT_OF_STOCK (" + sku + ")"));
-    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(jwt()))
+    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(TestTokens.admin("ops")))
         .andExpect(jsonPath("$.available").value(2))
         .andExpect(jsonPath("$.reserved").value(0));
   }
@@ -134,7 +133,7 @@ class OrderSagaIT {
     String id = placeOrder(customer, sku, 4, "5.00");
     awaitOrder(customer, id, "CONFIRMED");
 
-    mvc.perform(post("/api/v1/orders/{id}/ship", id).with(as("warehouse")))
+    mvc.perform(post("/api/v1/orders/{id}/ship", id).with(TestTokens.admin("warehouse")))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SHIPPED"));
 
@@ -142,7 +141,7 @@ class OrderSagaIT {
     await()
         .atMost(TIMEOUT)
         .untilAsserted(() ->
-            mvc.perform(get("/api/v1/inventory/{sku}", sku).with(jwt()))
+            mvc.perform(get("/api/v1/inventory/{sku}", sku).with(TestTokens.admin("ops")))
                 .andExpect(jsonPath("$.available").value(6))
                 .andExpect(jsonPath("$.reserved").value(0)));
   }

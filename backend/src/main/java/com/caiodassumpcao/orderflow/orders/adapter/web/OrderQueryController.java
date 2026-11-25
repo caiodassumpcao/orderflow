@@ -5,6 +5,7 @@ import com.caiodassumpcao.orderflow.orders.application.query.OrderQueryService;
 import com.caiodassumpcao.orderflow.orders.domain.CustomerId;
 import com.caiodassumpcao.orderflow.orders.domain.OrderId;
 import com.caiodassumpcao.orderflow.orders.domain.OrderStatus;
+import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.Min;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +39,7 @@ class OrderQueryController {
   }
 
   @GetMapping
+  @PreAuthorize(Roles.HAS_USER)
   @Operation(
       summary = "Lista os pedidos do cliente",
       description =
@@ -63,6 +66,7 @@ class OrderQueryController {
   }
 
   @GetMapping("/{orderId}")
+  @PreAuthorize(Roles.HAS_USER)
   @Operation(summary = "Detalhe de um pedido do cliente")
   OrderResponse getOrder(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID orderId) {
     return OrderResponse.of(queries.getOrder(new OrderId(orderId), customer(jwt)));

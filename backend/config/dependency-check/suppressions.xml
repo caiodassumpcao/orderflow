@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Supressões do OWASP Dependency-Check. Cada entrada precisa de justificativa em <notes> e,
+  quando possível, de prazo (until="AAAA-MM-DD") para ser revista. Vazio por enquanto.
+  Formato: https://jeremylong.github.io/DependencyCheck/general/suppression.html
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+</suppressions>

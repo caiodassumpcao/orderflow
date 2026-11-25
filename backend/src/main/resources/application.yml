@@ -16,6 +16,10 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    # O seed de estoque de dev é uma migration repetível (db/dev-data). Um banco de dev seedado
+    # continua válido para a imagem de produção, que não tem essa pasta. Versionadas ausentes
+    # seguem falhando a validação.
+    ignore-migration-patterns: "repeatable:missing"
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
@@ -96,7 +100,16 @@ orderflow:
       multiplier: 2.0
       max-delay-ms: 10000
   security:
-    # Libera /actuator/health e Swagger sem autenticação. Ligado apenas no perfil dev.
+    # Libera /actuator/health completo e Swagger sem autenticação. Ligado apenas no perfil dev.
+    # Os probes /actuator/health/{liveness,readiness} são públicos em qualquer perfil.
     dev-endpoints-public: false
+    jwt:
+      # Clientes (claim azp) cujos tokens a API aceita; separe vários por vírgula.
+      authorized-parties: ${OAUTH2_AUTHORIZED_PARTIES:orderflow-spa}
+    rate-limit:
+      # Comandos (POST/PUT/PATCH/DELETE) por usuário: rajada de 30, repostos em 1 minuto.
+      enabled: true
+      capacity: 30
+      refill-period: 1m
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS}

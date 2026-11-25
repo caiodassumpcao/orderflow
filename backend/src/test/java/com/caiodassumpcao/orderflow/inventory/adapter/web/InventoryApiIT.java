@@ -1,11 +1,11 @@
 package com.caiodassumpcao.orderflow.inventory.adapter.web;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.caiodassumpcao.orderflow.TestTokens;
 import com.caiodassumpcao.orderflow.TestcontainersConfiguration;
 import com.caiodassumpcao.orderflow.shared.error.Problems;
 import java.util.UUID;
@@ -37,7 +37,7 @@ class InventoryApiIT {
         .param(sku)
         .update();
 
-    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(jwt()))
+    mvc.perform(get("/api/v1/inventory/{sku}", sku).with(TestTokens.admin("ops")))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.sku").value(sku))
@@ -49,16 +49,23 @@ class InventoryApiIT {
 
   @Test
   void reportsUnknownProducts() throws Exception {
-    mvc.perform(get("/api/v1/inventory/{sku}", "SKU-404").with(jwt()))
+    mvc.perform(get("/api/v1/inventory/{sku}", "SKU-404").with(TestTokens.admin("ops")))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.type").value(Problems.TYPE_BASE + "stock-item-not-found"));
   }
 
   @Test
   void rejectsMalformedSkus() throws Exception {
-    mvc.perform(get("/api/v1/inventory/{sku}", "bad-sku").with(jwt()))
+    mvc.perform(get("/api/v1/inventory/{sku}", "bad-sku").with(TestTokens.admin("ops")))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errors[0].field").value("sku"));
+  }
+
+  @Test
+  void isReservedToAdmins() throws Exception {
+    mvc.perform(get("/api/v1/inventory/{sku}", "SKU-001").with(TestTokens.customer("alice")))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
   }
 
   @Test
