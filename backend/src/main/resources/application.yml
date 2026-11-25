@@ -16,6 +16,10 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    # O seed de estoque de dev é uma migration repetível (db/dev-data). Um banco de dev seedado
+    # continua válido para a imagem de produção, que não tem essa pasta. Versionadas ausentes
+    # seguem falhando a validação.
+    ignore-migration-patterns: "repeatable:missing"
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
