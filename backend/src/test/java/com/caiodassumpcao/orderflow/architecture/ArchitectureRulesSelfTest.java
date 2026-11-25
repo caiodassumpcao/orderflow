@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.caiodassumpcao.orderflow.architecture.fixtures.violating.application.TransactionalUseCase;
 import com.caiodassumpcao.orderflow.architecture.fixtures.violating.domain.SpringAwareDomainObject;
+import com.caiodassumpcao.orderflow.architecture.fixtures.violating.web.UnguardedController;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Test;
@@ -27,5 +28,14 @@ class ArchitectureRulesSelfTest {
     assertThatThrownBy(() -> ArchitectureRules.APPLICATION_IS_FRAMEWORK_FREE.check(violating))
         .isInstanceOf(AssertionError.class)
         .hasMessageContaining("application must not depend on Spring, JPA or Hibernate");
+  }
+
+  @Test
+  void endpointRuleRejectsAHandlerWithoutPreAuthorize() {
+    JavaClasses violating = new ClassFileImporter().importClasses(UnguardedController.class);
+
+    assertThatThrownBy(() -> ArchitectureRules.ENDPOINTS_DECLARE_REQUIRED_ROLE.check(violating))
+        .isInstanceOf(AssertionError.class)
+        .hasMessageContaining("every endpoint must declare the required role");
   }
 }

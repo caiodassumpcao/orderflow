@@ -31,6 +31,11 @@ class ArchitectureTest {
   }
 
   @ArchTest
+  void endpointsDeclareTheRequiredRole(JavaClasses classes) {
+    ArchitectureRules.ENDPOINTS_DECLARE_REQUIRED_ROLE.check(classes);
+  }
+
+  @ArchTest
   void ordersDoNotDependOnInventory(JavaClasses classes) {
     ArchitectureRules.ORDERS_DO_NOT_DEPEND_ON_INVENTORY.check(classes);
   }

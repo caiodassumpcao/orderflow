@@ -1,5 +1,6 @@
 package com.caiodassumpcao.orderflow.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.lang.ArchRule;
@@ -73,6 +74,29 @@ final class ArchitectureRules {
           .dependOnClassesThat()
           .resideInAPackage("com.caiodassumpcao.orderflow.orders..")
           .as("inventory must talk to orders only through events")
+          .allowEmptyShould(true);
+
+  /**
+   * Autorização explícita: todo endpoint declara o papel exigido. Um endpoint novo sem
+   * {@code @PreAuthorize} quebra o build em vez de ficar acessível a qualquer usuário autenticado.
+   */
+  static final ArchRule ENDPOINTS_DECLARE_REQUIRED_ROLE =
+      methods()
+          .that()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.GetMapping")
+          .or()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.PostMapping")
+          .or()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.PutMapping")
+          .or()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.PatchMapping")
+          .or()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.DeleteMapping")
+          .or()
+          .areAnnotatedWith("org.springframework.web.bind.annotation.RequestMapping")
+          .should()
+          .beAnnotatedWith("org.springframework.security.access.prepost.PreAuthorize")
+          .as("every endpoint must declare the required role with @PreAuthorize")
           .allowEmptyShould(true);
 
   private ArchitectureRules() {}

@@ -2,12 +2,12 @@ package com.caiodassumpcao.orderflow.orders.adapter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.caiodassumpcao.orderflow.TestTokens;
 import com.caiodassumpcao.orderflow.TestcontainersConfiguration;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderProjectionStore;
 import com.caiodassumpcao.orderflow.orders.application.port.UnitOfWork;
@@ -50,7 +50,7 @@ class OrderQueryApiIT {
   @Autowired private JsonMapper json;
 
   private static JwtRequestPostProcessor as(String subject) {
-    return jwt().jwt(token -> token.subject(subject));
+    return TestTokens.customer(subject);
   }
 
   private OrderId seed(String customer, int secondsAfterT0) {
@@ -161,6 +161,26 @@ class OrderQueryApiIT {
     mvc.perform(get(ORDERS + "/{id}", id).with(as("intruder")))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.type").value(Problems.TYPE_BASE + "order-not-found"));
+  }
+
+  @Test
+  void letsAdminsSeeAnyCustomersOrdersWithTheOwner() throws Exception {
+    String customer = "q-" + UUID.randomUUID();
+    OrderId id = seed(customer, 0);
+
+    mvc.perform(
+            get("/api/v1/admin/orders").with(TestTokens.admin("ops")).param("customerId", customer))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].id").value(id.toString()))
+        .andExpect(jsonPath("$.items[0].customerId").value(customer));
+    mvc.perform(get("/api/v1/admin/orders/{id}", id).with(TestTokens.admin("ops")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.customerId").value(customer))
+        .andExpect(jsonPath("$.order.id").value(id.toString()))
+        .andExpect(jsonPath("$.order.items[0].sku").value("SKU-001"));
+    mvc.perform(get("/api/v1/admin/orders/{id}", UUID.randomUUID()).with(TestTokens.admin("ops")))
+        .andExpect(status().isNotFound());
   }
 
   @Test

@@ -29,5 +29,9 @@ COPY --from=build --chown=orderflow:orderflow /workspace/target/extracted/applic
 USER 10001:10001
 EXPOSE 8080
 
+# Probe público e sem detalhes (ver SecurityConfig.PUBLIC_PROBES); wget vem do busybox do Alpine.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/liveness || exit 1
+
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

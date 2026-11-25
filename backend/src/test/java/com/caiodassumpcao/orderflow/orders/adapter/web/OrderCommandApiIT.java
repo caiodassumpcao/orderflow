@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.caiodassumpcao.orderflow.TestTokens;
 import com.caiodassumpcao.orderflow.TestcontainersConfiguration;
 import com.caiodassumpcao.orderflow.shared.error.Problems;
 import java.util.UUID;
@@ -48,7 +48,7 @@ class OrderCommandApiIT {
   @Autowired private JsonMapper json;
 
   private static JwtRequestPostProcessor customer(String subject) {
-    return jwt().jwt(token -> token.subject(subject));
+    return TestTokens.customer(subject);
   }
 
   private static String newKey() {
@@ -335,7 +335,7 @@ class OrderCommandApiIT {
       String id = createOrder("mike");
 
       expectProblem(
-              mvc.perform(post(ORDERS + "/{id}/ship", id).with(customer("mike"))),
+              mvc.perform(post(ORDERS + "/{id}/ship", id).with(TestTokens.admin("ops"))),
               409,
               "order-state-conflict")
           .andExpect(jsonPath("$.currentStatus").value("CREATED"))
@@ -345,7 +345,7 @@ class OrderCommandApiIT {
     @Test
     void reportsUnknownOrders() throws Exception {
       expectProblem(
-          mvc.perform(post(ORDERS + "/{id}/ship", UUID.randomUUID()).with(customer("mike"))),
+          mvc.perform(post(ORDERS + "/{id}/ship", UUID.randomUUID()).with(TestTokens.admin("ops"))),
           404,
           "order-not-found");
     }

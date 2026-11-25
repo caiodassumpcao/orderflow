@@ -15,13 +15,21 @@ import java.util.Optional;
 public interface OrderReadModel {
 
   /**
-   * Pedidos do cliente do mais novo para o mais antigo, começando depois de {@code after}.
+   * Pedidos do mais novo para o mais antigo, começando depois de {@code after}.
    *
+   * @param customerId restringe a um cliente; vazio lista todos (visão de administrador)
    * @param limit quantidade máxima de linhas devolvidas
    */
   List<OrderSummary> findOrders(
-      CustomerId customerId, Optional<OrderStatus> status, Optional<PageCursor> after, int limit);
+      Optional<CustomerId> customerId,
+      Optional<OrderStatus> status,
+      Optional<PageCursor> after,
+      int limit);
 
-  /** Detalhe do pedido, se ele existir e pertencer ao cliente. */
-  Optional<OrderDetail> findOrder(OrderId orderId, CustomerId customerId);
+  /**
+   * Detalhe do pedido.
+   *
+   * @param customerId se presente, o pedido só é devolvido se pertencer a esse cliente
+   */
+  Optional<OrderDetail> findOrder(OrderId orderId, Optional<CustomerId> customerId);
 }

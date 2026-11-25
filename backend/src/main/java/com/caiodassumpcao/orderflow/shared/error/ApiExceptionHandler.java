@@ -1,5 +1,6 @@
 package com.caiodassumpcao.orderflow.shared.error;
 
+import com.caiodassumpcao.orderflow.shared.security.RateLimitExceededException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Comparator;
 import java.util.List;
@@ -47,6 +48,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       AccessDeniedException ex, HttpServletRequest request) {
     return Problems.response(
         HttpStatus.FORBIDDEN, null, null, "You do not have permission for this resource.", request);
+  }
+
+  @ExceptionHandler(RateLimitExceededException.class)
+  ResponseEntity<ProblemDetail> handleRateLimit(
+      RateLimitExceededException ex, HttpServletRequest request) {
+    ResponseEntity<ProblemDetail> problem =
+        Problems.response(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "rate-limit-exceeded",
+            "Too many requests",
+            "Too many write requests. Retry after " + ex.retryAfterSeconds() + " seconds.",
+            request);
+    return ResponseEntity.status(problem.getStatusCode())
+        .headers(problem.getHeaders())
+        .header(HttpHeaders.RETRY_AFTER, Long.toString(ex.retryAfterSeconds()))
+        .body(problem.getBody());
   }
 
   /** Corpo inválido: lista cada campo rejeitado em {@code errors}. */

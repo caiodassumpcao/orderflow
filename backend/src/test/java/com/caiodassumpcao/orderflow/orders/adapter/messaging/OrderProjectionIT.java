@@ -1,12 +1,12 @@
 package com.caiodassumpcao.orderflow.orders.adapter.messaging;
 
 import static org.awaitility.Awaitility.await;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.caiodassumpcao.orderflow.TestTokens;
 import com.caiodassumpcao.orderflow.TestcontainersConfiguration;
 import com.caiodassumpcao.orderflow.shared.messaging.EventEnvelope;
 import com.caiodassumpcao.orderflow.shared.messaging.EventEnvelopeCodec;
@@ -46,7 +46,7 @@ class OrderProjectionIT {
   @Autowired private JsonMapper json;
 
   private static JwtRequestPostProcessor as(String subject) {
-    return jwt().jwt(token -> token.subject(subject));
+    return TestTokens.customer(subject);
   }
 
   @Test
