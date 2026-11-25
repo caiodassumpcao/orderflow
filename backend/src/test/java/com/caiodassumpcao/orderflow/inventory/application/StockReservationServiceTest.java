@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.caiodassumpcao.orderflow.inventory.application.port.InventoryEventOutbox;
 import com.caiodassumpcao.orderflow.inventory.application.port.InventoryUnitOfWork;
-import com.caiodassumpcao.orderflow.inventory.application.port.StockItemRepository;
 import com.caiodassumpcao.orderflow.inventory.application.port.StockReservationRepository;
 import com.caiodassumpcao.orderflow.inventory.domain.InventoryEvent;
 import com.caiodassumpcao.orderflow.inventory.domain.ReservationLine;
@@ -18,10 +17,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Currency;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,34 +31,10 @@ class StockReservationServiceTest {
   private static final Currency BRL = Currency.getInstance("BRL");
   private static final Sku A = new Sku("SKU-A01");
 
-  /** Estoque em memória que devolve cópias, como o banco faria. */
-  private final Map<Sku, StockItem> stockRows = new HashMap<>();
+  private final InMemoryStockItemRepository stockItems = new InMemoryStockItemRepository();
 
   private final Map<UUID, StockReservation> reservationRows = new HashMap<>();
   private final List<InventoryEvent> published = new ArrayList<>();
-
-  private final StockItemRepository stockItems =
-      new StockItemRepository() {
-        @Override
-        public Optional<StockItem> find(Sku sku) {
-          return Optional.ofNullable(stockRows.get(sku)).map(StockReservationServiceTest::copy);
-        }
-
-        @Override
-        public Map<Sku, StockItem> lockAll(Collection<Sku> skus) {
-          Map<Sku, StockItem> locked = new LinkedHashMap<>();
-          skus.stream()
-              .sorted()
-              .filter(stockRows::containsKey)
-              .forEach(sku -> locked.put(sku, copy(stockRows.get(sku))));
-          return locked;
-        }
-
-        @Override
-        public void saveAll(Collection<StockItem> items) {
-          items.forEach(item -> stockRows.put(item.sku(), copy(item)));
-        }
-      };
 
   private final StockReservationRepository reservations =
       new StockReservationRepository() {
@@ -102,18 +75,8 @@ class StockReservationServiceTest {
           unitOfWork,
           Clock.fixed(Instant.parse("2026-11-25T12:00:00Z"), ZoneOffset.UTC));
 
-  private static StockItem copy(StockItem item) {
-    return new StockItem(
-        item.sku(),
-        item.currency(),
-        item.unitPrice(),
-        item.available(),
-        item.reserved(),
-        item.version());
-  }
-
   private void stock(int available) {
-    stockRows.put(A, new StockItem(A, BRL, new BigDecimal("10.00"), available, 0, 0));
+    stockItems.put(new StockItem(A, "Product A", BRL, new BigDecimal("10.00"), available, 0, 0));
   }
 
   private static List<ReservationLine> twoUnits() {
@@ -127,8 +90,8 @@ class StockReservationServiceTest {
 
     assertThat(service.reserve(orderId, BRL, twoUnits())).isEqualTo(ReservationStatus.RESERVED);
 
-    assertThat(stockRows.get(A).available()).isEqualTo(3);
-    assertThat(stockRows.get(A).reserved()).isEqualTo(2);
+    assertThat(stockItems.get(A).available()).isEqualTo(3);
+    assertThat(stockItems.get(A).reserved()).isEqualTo(2);
     assertThat(published).singleElement().isInstanceOf(InventoryEvent.StockReserved.class);
   }
 
@@ -139,7 +102,7 @@ class StockReservationServiceTest {
     assertThat(service.reserve(UUID.randomUUID(), BRL, twoUnits()))
         .isEqualTo(ReservationStatus.REJECTED);
 
-    assertThat(stockRows.get(A).available()).isEqualTo(1);
+    assertThat(stockItems.get(A).available()).isEqualTo(1);
     assertThat(published).singleElement().isInstanceOf(InventoryEvent.StockRejected.class);
   }
 
@@ -151,7 +114,7 @@ class StockReservationServiceTest {
 
     assertThat(service.reserve(orderId, BRL, twoUnits())).isEqualTo(ReservationStatus.RESERVED);
 
-    assertThat(stockRows.get(A).reserved()).isEqualTo(2);
+    assertThat(stockItems.get(A).reserved()).isEqualTo(2);
     assertThat(published).hasSize(1);
   }
 
@@ -164,8 +127,8 @@ class StockReservationServiceTest {
     assertThat(service.release(orderId)).isEqualTo(ReservationStatus.RELEASED);
     assertThat(service.release(orderId)).isEqualTo(ReservationStatus.RELEASED);
 
-    assertThat(stockRows.get(A).available()).isEqualTo(5);
-    assertThat(stockRows.get(A).reserved()).isZero();
+    assertThat(stockItems.get(A).available()).isEqualTo(5);
+    assertThat(stockItems.get(A).reserved()).isZero();
   }
 
   @Test
@@ -177,7 +140,7 @@ class StockReservationServiceTest {
     assertThat(service.reserve(orderId, BRL, twoUnits()))
         .isEqualTo(ReservationStatus.CANCELLED_BEFORE_RESERVATION);
 
-    assertThat(stockRows.get(A).available()).isEqualTo(5);
+    assertThat(stockItems.get(A).available()).isEqualTo(5);
     assertThat(published).isEmpty();
   }
 
@@ -188,7 +151,7 @@ class StockReservationServiceTest {
     service.reserve(orderId, BRL, twoUnits());
 
     assertThat(service.release(orderId)).isEqualTo(ReservationStatus.REJECTED);
-    assertThat(stockRows.get(A).available()).isEqualTo(1);
+    assertThat(stockItems.get(A).available()).isEqualTo(1);
   }
 
   @Test
@@ -200,8 +163,8 @@ class StockReservationServiceTest {
     assertThat(service.fulfill(orderId)).isEqualTo(ReservationStatus.FULFILLED);
     assertThat(service.fulfill(orderId)).isEqualTo(ReservationStatus.FULFILLED);
 
-    assertThat(stockRows.get(A).available()).isEqualTo(3);
-    assertThat(stockRows.get(A).reserved()).isZero();
+    assertThat(stockItems.get(A).available()).isEqualTo(3);
+    assertThat(stockItems.get(A).reserved()).isZero();
   }
 
   @Test

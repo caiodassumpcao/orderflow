@@ -153,13 +153,20 @@ public class SecurityConfig {
     cors.setAllowedOrigins(properties.cors().allowedOrigins());
     cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     cors.setAllowedHeaders(
-        List.of("Authorization", "Content-Type", "Idempotency-Key", CorrelationIdFilter.HEADER));
-    // A SPA precisa ler estes headers das respostas (criação, replay e limite de comandos).
+        List.of(
+            HttpHeaders.AUTHORIZATION,
+            HttpHeaders.CONTENT_TYPE,
+            HttpHeaders.IF_MATCH,
+            "Idempotency-Key",
+            CorrelationIdFilter.HEADER));
+    // A SPA precisa ler estes headers das respostas (criação, replay, limite de comandos e versão
+    // do produto para o If-Match).
     cors.setExposedHeaders(
         List.of(
             CorrelationIdFilter.HEADER,
             HttpHeaders.LOCATION,
             HttpHeaders.RETRY_AFTER,
+            HttpHeaders.ETAG,
             "Idempotency-Replayed"));
     cors.setAllowCredentials(false);
     cors.setMaxAge(3600L);

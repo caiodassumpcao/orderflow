@@ -44,8 +44,8 @@ class OrderSagaIT {
   private String product(String price, int available) {
     String sku = "SAGA-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     jdbc.sql(
-            "INSERT INTO command.stock_items (sku, currency, unit_price, available)"
-                + " VALUES (?, 'BRL', CAST(? AS numeric), ?)")
+            "INSERT INTO command.stock_items (sku, name, currency, unit_price, available)"
+                + " VALUES (?, 'Saga product', 'BRL', CAST(? AS numeric), ?)")
         .param(sku)
         .param(price)
         .param(available)

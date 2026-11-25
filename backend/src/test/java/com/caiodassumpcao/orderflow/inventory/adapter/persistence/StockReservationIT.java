@@ -40,8 +40,8 @@ class StockReservationIT {
   private Sku newSku(int available) {
     Sku sku = new Sku("IT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
     jdbc.sql(
-            "INSERT INTO command.stock_items (sku, currency, unit_price, available)"
-                + " VALUES (?, 'BRL', 10.00, ?)")
+            "INSERT INTO command.stock_items (sku, name, currency, unit_price, available)"
+                + " VALUES (?, 'Test product', 'BRL', 10.00, ?)")
         .param(sku.value())
         .param(available)
         .update();
