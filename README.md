@@ -311,7 +311,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
 - [x] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
   - Entrega a infraestrutura (relay, tópicos, idempotência, retry/DLQ, métricas) validada com um consumer de teste; os primeiros consumers reais são o projector (Fase 3) e o inventário (Fase 4).
-- [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
+- [x] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
   - Projector tolerante a eventos repetidos e fora de ordem (via `aggregateVersion`), com teste dedicado; consultas restritas ao dono.
   - Índices além do da paginação keyset ficam para o estudo da Fase 8.
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
