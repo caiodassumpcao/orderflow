@@ -1,0 +1,19 @@
+{
+  "eventId": "01a20f13-6b11-7c2e-8f0a-5d2c9e7b4a10",
+  "type": "OrderCreated",
+  "version": 1,
+  "aggregateId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+  "aggregateVersion": 0,
+  "occurredAt": "2026-11-24T19:20:31.512Z",
+  "correlationId": "4f1c2b7e-8a43-4d0e-9a51-2b9e6f0c1d77",
+  "payload": {
+    "orderId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+    "customerId": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+    "currency": "BRL",
+    "total": "139.80",
+    "items": [
+      { "sku": "SKU-001", "quantity": 2, "unitPrice": "19.90" },
+      { "sku": "SKU-002", "quantity": 1, "unitPrice": "100.00" }
+    ]
+  }
+}

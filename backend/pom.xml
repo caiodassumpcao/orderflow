@@ -29,6 +29,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springdoc.version>3.2.0</springdoc.version>
         <archunit.version>1.5.1</archunit.version>
+        <json-schema-validator.version>3.0.8</json-schema-validator.version>
 
         <!-- Overrides de segurança de dependências transitivas (kafka-clients 4.2.2).
              Remover quando o Spring Boot gerenciar versões corrigidas. -->
@@ -163,6 +164,13 @@
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Contratos de eventos: valida os payloads publicados contra docs/events/schemas (JSON Schema 2020-12) -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>${json-schema-validator.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

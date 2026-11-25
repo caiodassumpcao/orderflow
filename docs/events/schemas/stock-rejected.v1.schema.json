@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/caiodassumpcao/orderflow/blob/main/docs/events/schemas/stock-rejected.v1.schema.json",
+  "title": "StockRejected (v1) — payload",
+  "description": "O pedido foi recusado e nada foi reservado; skus lista os produtos que causaram a recusa.",
+  "type": "object",
+  "required": ["orderId", "reason", "skus"],
+  "additionalProperties": false,
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "reason": { "type": "string", "enum": ["UNKNOWN_SKU", "PRICE_MISMATCH", "OUT_OF_STOCK"] },
+    "skus": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9-]{2,31}$" }
+    }
+  }
+}

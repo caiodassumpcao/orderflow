@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/caiodassumpcao/orderflow/blob/main/docs/events/schemas/order-cancelled.v1.schema.json",
+  "title": "OrderCancelled (v1) — payload",
+  "description": "Pedido cancelado. previousStatus STOCK_RESERVED indica estoque reservado a liberar; reason é opcional.",
+  "type": "object",
+  "required": ["orderId", "previousStatus", "reason"],
+  "additionalProperties": false,
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "previousStatus": { "type": "string", "enum": ["CREATED", "STOCK_RESERVED"] },
+    "reason": { "type": ["string", "null"], "maxLength": 200 }
+  }
+}
