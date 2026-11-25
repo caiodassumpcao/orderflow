@@ -16,6 +16,12 @@ public class OrderTopics {
   /** Eventos do agregado Order, particionados por {@code aggregateId}. */
   public static final String ORDER_EVENTS = "order.events";
 
+  /**
+   * Tópico do inventário consumido pela saga (criado pelo contexto de inventário; contrato em
+   * docs/events/inventory-events.md).
+   */
+  static final String INVENTORY_EVENTS = "inventory.events";
+
   @Bean
   NewTopic orderEventsTopic(MessagingProperties properties) {
     return TopicBuilder.name(ORDER_EVENTS)

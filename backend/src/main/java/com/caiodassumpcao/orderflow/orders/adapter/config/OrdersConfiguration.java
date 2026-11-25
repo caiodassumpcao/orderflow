@@ -1,6 +1,7 @@
 package com.caiodassumpcao.orderflow.orders.adapter.config;
 
 import com.caiodassumpcao.orderflow.orders.application.OrderCommandService;
+import com.caiodassumpcao.orderflow.orders.application.OrderSagaService;
 import com.caiodassumpcao.orderflow.orders.application.port.IdempotencyKeyStore;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderEventOutbox;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderProjectionStore;
@@ -43,5 +44,11 @@ public class OrdersConfiguration {
   @Bean
   OrderProjectionService orderProjectionService(OrderProjectionStore store) {
     return new OrderProjectionService(store);
+  }
+
+  @Bean
+  OrderSagaService orderSagaService(
+      OrderRepository orders, OrderEventOutbox outbox, UnitOfWork unitOfWork, Clock clock) {
+    return new OrderSagaService(orders, outbox, unitOfWork, clock);
   }
 }

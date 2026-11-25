@@ -1,6 +1,7 @@
 package com.caiodassumpcao.orderflow.shared.messaging;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,19 @@ public class DeadLetters {
    * @param reason mensagem da exceção que levou à DLQ, se disponível
    */
   public void record(String consumer, String topic, String key, String reason) {
+    recordReason(consumer, topic, key, reason);
+  }
+
+  /**
+   * Variante para o cabeçalho {@code KafkaHeaders.EXCEPTION_MESSAGE}, que o Spring Kafka grava como
+   * bytes UTF-8.
+   */
+  public void record(String consumer, String topic, String key, byte[] reason) {
+    recordReason(
+        consumer, topic, key, reason == null ? null : new String(reason, StandardCharsets.UTF_8));
+  }
+
+  private void recordReason(String consumer, String topic, String key, String reason) {
     meters.counter("orderflow.messaging.dead.letters", "consumer", consumer).increment();
     LOG.error(
         "Message with key {} moved to dead-letter topic {} by consumer {}: {}",
