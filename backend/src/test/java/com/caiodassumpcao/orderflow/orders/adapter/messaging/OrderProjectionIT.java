@@ -26,7 +26,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
 /** CQRS ponta a ponta com Kafka real: comando HTTP → outbox → relay → projector → consulta HTTP. */
-@SpringBootTest(properties = "orderflow.messaging.relay.enabled=true")
+@SpringBootTest(
+    properties = {
+      "orderflow.messaging.relay.enabled=true",
+      // Isola o que o teste observa: sem a saga, nenhum evento extra é gerado para os pedidos.
+      "orderflow.messaging.consumers.inventory.enabled=false",
+      "orderflow.messaging.consumers.order-saga.enabled=false"
+    })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
