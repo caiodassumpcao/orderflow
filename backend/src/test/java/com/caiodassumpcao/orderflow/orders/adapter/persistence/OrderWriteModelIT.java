@@ -218,7 +218,15 @@ class OrderWriteModelIT {
     Order order = OrderAssembler.newOrder(customer);
     OutboxMessage message =
         new OutboxMessage(
-            UuidV7.generate(), "Order", order.id().value(), "Probe", 1, "{}", null, Instant.now());
+            UuidV7.generate(),
+            "order.events",
+            "Order",
+            order.id().value(),
+            "Probe",
+            1,
+            "{}",
+            null,
+            Instant.now());
 
     assertThatThrownBy(() ->
             unitOfWork.inTransaction(() -> {

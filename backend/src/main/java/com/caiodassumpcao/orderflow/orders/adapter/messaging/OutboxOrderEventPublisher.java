@@ -24,6 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 class OutboxOrderEventPublisher implements OrderEventOutbox {
 
   static final String AGGREGATE_TYPE = "Order";
+  static final String TOPIC = OrderTopics.ORDER_EVENTS;
   static final int CONTRACT_VERSION = 1;
 
   private final OutboxWriter writer;
@@ -41,6 +42,7 @@ class OutboxOrderEventPublisher implements OrderEventOutbox {
       writer.append(
           new OutboxMessage(
               UuidV7.generate(),
+              TOPIC,
               AGGREGATE_TYPE,
               event.orderId().value(),
               event.getClass().getSimpleName(),

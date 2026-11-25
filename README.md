@@ -121,7 +121,7 @@ Envelope padrão do evento:
 }
 ```
 
-Tópicos: `order.events`, `inventory.events`, mais `*.retry.<n>` e `*.dlq`. Chave de partição: `aggregateId` (ordenação por pedido). Contratos versionados em [`docs/events/`](docs/events/order-events.md).
+Tópicos: `order.events`, `inventory.events`, mais tópicos de retry e DLQ por consumer (`<tópico>.<consumer>.retry-<n>` e `<tópico>.<consumer>.dlq`). Chave de partição: `aggregateId` (ordenação por pedido). Contratos versionados em [`docs/events/`](docs/events/order-events.md).
 
 ## 5. Estrutura do repositório
 
@@ -147,6 +147,7 @@ orderflow/
 │   ├── architecture.md
 │   ├── adr/                                    # decisões arquiteturais
 │   ├── api/problems.md                         # catálogo de erros (RFC 9457)
+│   ├── messaging.md                            # relay, tópicos, retry/DLQ, métricas
 │   ├── events/                                 # contratos dos eventos
 │   ├── db/{er-diagram.md,performance.md}
 │   ├── accessibility.md
@@ -229,12 +230,13 @@ Resultados (preencher com medições reais):
 
 ## 9. Mensageria: garantias e falhas
 
-- **Transactional Outbox:** o evento é gravado com o agregado; um relay publica no Kafka (at-least-once, sem dual-write).
-- **Consumers idempotentes:** tabela `processed_events (event_id, consumer)` com chave única.
-- **Retry com backoff** em tópicos `*.retry.<n>` e **DLQ** após esgotar tentativas, com alerta de métrica.
+- **Transactional Outbox:** o evento é gravado com o agregado; um relay publica no Kafka em ordem de gravação, uma instância por vez, marcando só o que o broker confirmou (at-least-once, sem dual-write).
+- **Consumers idempotentes:** tabela `processed_events (event_id, consumer)` com chave primária, gravada na mesma transação que os efeitos do consumer.
+- **Retry não bloqueante com backoff** em tópicos próprios de cada consumer (`<tópico>.<consumer>.retry-<n>`) e **DLQ** (`<tópico>.<consumer>.dlq`) após esgotar as tentativas; poison pills vão direto para a DLQ. Métrica `orderflow.messaging.dead.letters` para alerta.
 - **Ordenação** garantida por chave de partição (`aggregateId`).
 - **Contratos** versionados e testados (contract tests nos produtores e consumers).
-- Cenários de falha cobertos em testes: broker indisponível, mensagem duplicada, mensagem fora de ordem, payload inválido (poison pill).
+- Cenários de falha cobertos em testes (Fase 2): broker indisponível, confirmação parcial do broker, mensagem duplicada, falha passageira recuperada no retry, falha persistente até a DLQ e payload inválido (poison pill). Mensagem fora de ordem é testada em cada consumer (Fases 3 e 4), porque o retry não bloqueante não preserva a ordem no consumer ([ADR-0007](docs/adr/0007-non-blocking-retry.md)).
+- Detalhes, configuração e receita para novos consumers em [`docs/messaging.md`](docs/messaging.md).
 
 ## 10. Testes
 
@@ -301,11 +303,13 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## 16. Roadmap
 
 - [x] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
-- [ ] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
+- [x] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
   - Endpoints de escrita incluídos nesta fase (criar, cancelar, enviar), com idempotência e Problem Details.
   - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
 - [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
+  - Entrega a infraestrutura (relay, tópicos, idempotência, retry/DLQ, métricas) validada com um consumer de teste; os primeiros consumers reais são o projector (Fase 3) e o inventário (Fase 4).
 - [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
+  - O projector precisa tolerar eventos fora de ordem (ADR-0007), com teste dedicado.
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
   - Decidir a fonte de verdade do preço (catálogo no inventário ou serviço próprio) e deixar de aceitar o preço unitário enviado pelo cliente.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
@@ -318,6 +322,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
   - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
 - [ ] **Fase 9 — Observabilidade e deploy:** métricas, Prometheus, Grafana, dashboards, deploy/demo
+  - Alertas sobre `orderflow.messaging.dead.letters` e o crescimento de `orderflow.outbox.pending`; ferramenta para reprocessar DLQs.
 - [ ] **Fase 10 — Validação de segurança e release:** revisão final antes da v1.0.0
   - Scans completos (CodeQL, Trivy, Dependency-Check, gitleaks, `npm audit`) sem HIGH/CRITICAL e com as moderadas tratadas ou justificadas.
   - `npm audit`: 19 vulnerabilidades moderadas em dependências de desenvolvimento (`glob`/`minimatch` puxados pelo `test-exclude` do Jest). Atualizar quando o Jest publicar versão corrigida ou aplicar `overrides` no `package.json`.
@@ -333,9 +338,10 @@ Registradas em `docs/adr/` (formato MADR). Iniciais:
 - [ADR-0001](docs/adr/0001-modular-monolith.md): Monólito modular em vez de microsserviços
 - ADR-0002: CQRS com projeções por eventos
 - [ADR-0003](docs/adr/0003-transactional-outbox.md): Transactional Outbox em vez de dual-write
-- ADR-0004: Kafka (KRaft) como broker
+- [ADR-0004](docs/adr/0004-kafka-kraft.md): Kafka (KRaft) como broker
 - ADR-0005: Keycloak para identidade
 - ADR-0006: Paginação keyset nas listagens grandes
+- [ADR-0007](docs/adr/0007-non-blocking-retry.md): Retry não bloqueante por consumer, com DLQ
 
 ## 18. Definition of Done
 

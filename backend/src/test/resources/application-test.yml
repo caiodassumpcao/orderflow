@@ -1,8 +1,6 @@
 # Perfil de testes. O datasource vem do Testcontainers (@ServiceConnection).
 spring:
-  kafka:
-    # Nenhum producer/consumer existe ainda; o endereço não é contatado nos testes.
-    bootstrap-servers: localhost:9092
+  # Kafka e PostgreSQL vêm do Testcontainers (@ServiceConnection).
   security:
     oauth2:
       resourceserver:
@@ -11,6 +9,17 @@ spring:
           issuer-uri: http://localhost:65535/realms/test
 
 orderflow:
+  messaging:
+    relay:
+      # Ligado só nos testes de mensageria, para não disputar a outbox com os demais testes.
+      enabled: false
+    topics:
+      replication-factor: 1
+    retry:
+      attempts: 3
+      initial-delay-ms: 200
+      multiplier: 2.0
+      max-delay-ms: 1000
   security:
     dev-endpoints-public: false
     cors:

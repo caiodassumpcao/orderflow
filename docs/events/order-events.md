@@ -1,6 +1,6 @@
 # Eventos do contexto de pedidos — contrato v1
 
-Os eventos são gravados na tabela `command.outbox` na mesma transação que altera o pedido (ver [ADR-0003](../adr/0003-transactional-outbox.md)). A partir da Fase 2, um relay os publica no tópico `order.events`, com `aggregateId` como chave de partição (ordem garantida por pedido).
+Os eventos são gravados na tabela `command.outbox` na mesma transação que altera o pedido (ver [ADR-0003](../adr/0003-transactional-outbox.md)). O relay da outbox os publica no tópico `order.events`, com `aggregateId` como chave de partição (ordem garantida por pedido no tópico). Veja [`docs/messaging.md`](../messaging.md) para retry, DLQ e a ordem do lado do consumer.
 
 ## Envelope
 
@@ -28,7 +28,7 @@ Cada linha da outbox guarda os campos do envelope em colunas e o payload em `jso
 | `correlationId` | `correlation_id` | Id da requisição que originou o evento (pode ser nulo) |
 | `payload` | `payload` | Conteúdo específico do evento (abaixo) |
 
-A coluna `position` (sequencial, não publicada) define a ordem em que o relay publica os eventos.
+As colunas `position` (sequencial) e `topic` não são publicadas: definem a ordem e o destino da publicação.
 
 Valores monetários são **strings decimais com duas casas** (`"139.80"`), para não perder precisão em consumers que usam ponto flutuante.
 
