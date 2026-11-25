@@ -206,7 +206,9 @@ Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (so
 | GET | `/api/v1/inventory/{sku}` | Consulta estoque | ADMIN |
 | GET | `/api/v1/dashboard/summary` | Métricas agregadas | ADMIN |
 
-Implementados na Fase 1: os três `POST` (criar, cancelar, enviar). As consultas `GET` chegam com o modelo de leitura (Fase 3) e o controle por papel (`USER`/`ADMIN`) na Fase 5; hoje qualquer usuário autenticado pode enviar um pedido, e o cancelamento já é restrito ao dono.
+Implementados: os três `POST` (Fase 1) e as duas consultas `GET` de pedidos (Fase 3). Inventário e dashboard chegam nas Fases 4 e 6, e o controle por papel (`USER`/`ADMIN`) na Fase 5: hoje qualquer usuário autenticado pode enviar um pedido; cancelamento e consultas já são restritos ao dono, e a visão de administrador (todos os pedidos) entra com o RBAC.
+
+**Consultas (modelo de leitura):** `GET /api/v1/orders` lista os pedidos do cliente do mais novo para o mais antigo, com `status` opcional, `limit` de 1 a 100 (padrão 20) e paginação keyset: a resposta traz `nextCursor`, que vai no parâmetro `cursor` da próxima chamada ([ADR-0006](docs/adr/0006-keyset-pagination.md)). As consultas são **eventualmente consistentes** com os comandos ([ADR-0002](docs/adr/0002-cqrs-event-projections.md)): logo após criar ou cancelar, o `GET` pode levar menos de um segundo para refletir a mudança; a resposta do próprio comando já traz o estado novo.
 
 Padrões: versionamento em URL, paginação por cursor/offset documentada, erros em **RFC 9457 (Problem Details)** com catálogo em [`docs/api/problems.md`](docs/api/problems.md), validação com Bean Validation (o erro lista os campos inválidos), cliente sempre identificado pelo `sub` do token.
 
@@ -215,7 +217,8 @@ Padrões: versionamento em URL, paginação por cursor/offset documentada, erros
 ## 8. Banco de dados e performance
 
 - Dois schemas: `command` (agregados + `outbox` + `processed_events`) e `query` (projeções).
-- Modelo de escrita atual (V2 e V3): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, `position` sequencial que define a ordem de publicação, índice parcial para eventos pendentes) e `command.idempotency_keys`. `processed_events` entra com os consumers na Fase 2.
+- Modelo de escrita atual (V2 e V3): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, `position` sequencial que define a ordem de publicação, índice parcial para eventos pendentes) e `command.idempotency_keys`; `aggregate_version` na outbox (V5) e `command.processed_events` (V4).
+- Modelo de leitura (V6): `query.order_summaries` e `query.order_items`, mantidos pelo projector; índice `(customer_id, created_at DESC, order_id DESC)` para a paginação keyset.
 - Migrations Flyway imutáveis e versionadas.
 - Diagrama ER em `docs/db/er-diagram.md`.
 - **Estudo de performance** em `docs/db/performance.md`: massa de dados (≥ 1M pedidos), consultas lentas, `EXPLAIN (ANALYZE, BUFFERS)` antes e depois, índices compostos/parciais, paginação keyset.
@@ -309,7 +312,8 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
   - Entrega a infraestrutura (relay, tópicos, idempotência, retry/DLQ, métricas) validada com um consumer de teste; os primeiros consumers reais são o projector (Fase 3) e o inventário (Fase 4).
 - [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
-  - O projector precisa tolerar eventos fora de ordem (ADR-0007), com teste dedicado.
+  - Projector tolerante a eventos repetidos e fora de ordem (via `aggregateVersion`), com teste dedicado; consultas restritas ao dono.
+  - Índices além do da paginação keyset ficam para o estudo da Fase 8.
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
   - Decidir a fonte de verdade do preço (catálogo no inventário ou serviço próprio) e deixar de aceitar o preço unitário enviado pelo cliente.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
@@ -336,11 +340,11 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 Registradas em `docs/adr/` (formato MADR). Iniciais:
 
 - [ADR-0001](docs/adr/0001-modular-monolith.md): Monólito modular em vez de microsserviços
-- ADR-0002: CQRS com projeções por eventos
+- [ADR-0002](docs/adr/0002-cqrs-event-projections.md): CQRS com projeções por eventos
 - [ADR-0003](docs/adr/0003-transactional-outbox.md): Transactional Outbox em vez de dual-write
 - [ADR-0004](docs/adr/0004-kafka-kraft.md): Kafka (KRaft) como broker
 - ADR-0005: Keycloak para identidade
-- ADR-0006: Paginação keyset nas listagens grandes
+- [ADR-0006](docs/adr/0006-keyset-pagination.md): Paginação keyset nas listagens grandes
 - [ADR-0007](docs/adr/0007-non-blocking-retry.md): Retry não bloqueante por consumer, com DLQ
 
 ## 18. Definition of Done

@@ -38,6 +38,12 @@ Os tópicos de retry e DLQ levam o nome do consumer porque cada consumer group p
 
 ## Consumo
 
+Consumers atuais de `order.events`:
+
+| Consumer | Group id | O que faz |
+|---|---|---|
+| `order-projector` | `order-projector` | mantém o modelo de leitura (`query.order_summaries`, `query.order_items`), aplicando só eventos com `aggregateVersion` mais nova que a já aplicada |
+
 Todo consumer segue a mesma receita:
 
 ```java
@@ -88,4 +94,6 @@ Expostas em `/actuator/prometheus`. Dashboards e alertas entram na Fase 9.
 ## Operação
 
 - Ver tópicos e mensagens: Kafka UI em `http://localhost:8081`.
-- Reprocessar uma DLQ: corrigir a causa e republicar as mensagens no tópico principal; a deduplicação por `eventId` torna a republicação segura. Uma ferramenta própria para isso fica para a Fase 9.
+- Reprocessar uma DLQ: corrigir a causa e republicar as mensagens. O caminho mais simples é pela própria outbox: `UPDATE command.outbox SET published_at = NULL WHERE aggregate_id IN (...)` devolve os eventos ao relay, que os publica de novo com o envelope atual. A deduplicação por `eventId` torna a republicação segura para quem já os processou. Uma ferramenta própria entra na Fase 9.
+- Exemplo real: os eventos publicados na Fase 2, antes de o envelope ter `aggregateVersion`, foram para a DLQ do projector como mensagens inválidas. Republicá-los pela outbox (com a versão preenchida pela migration V5) os projetou corretamente.
+- Reconstruir a projeção do zero: esvaziar `query.order_summaries` (os itens saem em cascata), remover as linhas do consumer em `processed_events` e republicar a outbox.
