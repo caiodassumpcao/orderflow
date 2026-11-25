@@ -1,0 +1,57 @@
+<dl class="summary">
+  <div>
+    <dt>Status</dt>
+    <dd><of-order-status [status]="order().status" /></dd>
+  </div>
+  <div>
+    <dt>Total</dt>
+    <dd>{{ order().total | currency: order().currency }}</dd>
+  </div>
+  <div>
+    <dt>Criado em</dt>
+    <dd>{{ order().createdAt | date: 'short' }}</dd>
+  </div>
+  <div>
+    <dt>Atualizado em</dt>
+    <dd>{{ order().updatedAt | date: 'short' }}</dd>
+  </div>
+  @if (cancellation(); as reason) {
+    <div class="reason">
+      <dt>Motivo do cancelamento</dt>
+      <dd>{{ reason }}</dd>
+    </div>
+  }
+</dl>
+
+<h2>Itens</h2>
+<div class="table-scroll">
+  <table class="data-table">
+    <caption class="visually-hidden">
+      Itens do pedido
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Produto (SKU)</th>
+        <th scope="col" class="numeric">Quantidade</th>
+        <th scope="col" class="numeric">Preço unitário</th>
+        <th scope="col" class="numeric">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of order().items; track $index) {
+        <tr>
+          <td>{{ item.sku }}</td>
+          <td class="numeric">{{ item.quantity }}</td>
+          <td class="numeric">{{ item.unitPrice | currency: order().currency }}</td>
+          <td class="numeric">{{ item.total | currency: order().currency }}</td>
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="3">Total</th>
+        <td class="numeric">{{ order().total | currency: order().currency }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

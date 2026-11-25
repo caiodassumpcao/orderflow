@@ -6,9 +6,16 @@
 
 .app-header,
 .app-footer {
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   background: var(--of-surface-strong);
   color: var(--of-on-surface-strong);
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
 }
 
 // Sobre o fundo escuro, o contorno de foco claro mantém contraste ≥ 3:1 (WCAG 1.4.11)
@@ -22,6 +29,67 @@
   font-size: 1.25rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.app-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-nav a {
+  display: inline-block;
+  padding: 0.5rem 0.25rem;
+  color: inherit;
+  text-underline-offset: 0.3em;
+
+  &:not(.active) {
+    text-decoration: none;
+  }
+
+  &.active {
+    font-weight: 700;
+    text-decoration-thickness: 2px;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+// Botões nativos (o shell não carrega o Material): claros sobre o cabeçalho escuro, contraste AA
+.session-button {
+  min-height: 2.5rem;
+  padding: 0 1.25rem;
+  border: 1px solid #ffffff;
+  border-radius: 1.25rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &.filled {
+    background: #ffffff;
+    color: #12355b;
+  }
+
+  &.outlined {
+    background: transparent;
+    color: #ffffff;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .app-main {

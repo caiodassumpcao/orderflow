@@ -1,0 +1,93 @@
+<h1>Todos os pedidos</h1>
+
+<form
+  class="filters"
+  [formGroup]="filters"
+  (ngSubmit)="applyFilters()"
+  role="search"
+  aria-label="Filtrar pedidos"
+>
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <select matNativeControl formControlName="status">
+      <option value="">Todos</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ statusLabels[status] }}</option>
+      }
+    </select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Cliente (ID)</mat-label>
+    <input matInput formControlName="customerId" autocomplete="off" spellcheck="false" />
+    @if (filters.controls.customerId.invalid) {
+      <mat-error>Use até 64 letras, dígitos ou . _ : &#64; -</mat-error>
+    }
+  </mat-form-field>
+
+  <div class="actions filter-actions">
+    <button mat-flat-button type="submit">Filtrar</button>
+    <button mat-button type="button" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
+<of-error-alert [error]="orders.error()" />
+
+@if (orders.loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando pedidos" />
+}
+
+@if (orders.loaded() && orders.items().length === 0) {
+  <p>Nenhum pedido encontrado.</p>
+}
+
+@if (orders.items().length > 0) {
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="visually-hidden">
+        Pedidos de todos os clientes, do mais novo para o mais antigo
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Pedido</th>
+          <th scope="col">Cliente</th>
+          <th scope="col">Criado em</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="numeric">Itens</th>
+          <th scope="col" class="numeric">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (order of orders.items(); track order.id) {
+          <tr>
+            <td>
+              <a
+                [routerLink]="['/admin/pedidos', order.id]"
+                [attr.aria-label]="'Pedido ' + order.id.slice(0, 8)"
+                >{{ order.id.slice(0, 8) }}</a
+              >
+            </td>
+            <td>{{ order.customerId }}</td>
+            <td>{{ order.createdAt | date: 'short' }}</td>
+            <td><of-order-status [status]="order.status" /></td>
+            <td class="numeric">{{ order.itemCount }}</td>
+            <td class="numeric">{{ order.total | currency: order.currency }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (orders.nextCursor()) {
+  <div class="actions">
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="orders.loading()"
+      (click)="orders.loadMore()"
+    >
+      Carregar mais
+    </button>
+  </div>
+}

@@ -1,0 +1,24 @@
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+
+  dt {
+    font-size: 0.875rem;
+    color: var(--of-muted);
+  }
+
+  dd {
+    margin: 0.25rem 0 0;
+    font-weight: 600;
+  }
+}
+
+.reason {
+  grid-column: 1 / -1;
+}
+
+tfoot th {
+  text-align: right;
+}

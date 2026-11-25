@@ -1,0 +1,84 @@
+<div class="page-header">
+  <h1>Meus pedidos</h1>
+  <a mat-flat-button routerLink="/pedidos/novo">Novo pedido</a>
+</div>
+
+<div class="filters">
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <select matNativeControl #statusFilter (change)="filterBy(statusFilter.value)">
+      <option value="">Todos</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ statusLabels[status] }}</option>
+      }
+    </select>
+  </mat-form-field>
+</div>
+
+<of-error-alert [error]="orders.error()" />
+
+@if (orders.loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando pedidos" />
+}
+
+@if (orders.loaded() && orders.items().length === 0) {
+  <p>
+    @if (status()) {
+      Nenhum pedido com este status.
+    } @else {
+      Você ainda não fez pedidos. <a routerLink="/pedidos/novo">Faça o primeiro</a>.
+    }
+  </p>
+}
+
+@if (orders.items().length > 0) {
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="visually-hidden">
+        Pedidos, do mais novo para o mais antigo
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Pedido</th>
+          <th scope="col">Criado em</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="numeric">Itens</th>
+          <th scope="col" class="numeric">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (order of orders.items(); track order.id) {
+          <tr>
+            <td>
+              <a
+                [routerLink]="['/pedidos', order.id]"
+                [attr.aria-label]="'Pedido ' + order.id.slice(0, 8)"
+                >{{ order.id.slice(0, 8) }}</a
+              >
+            </td>
+            <td>{{ order.createdAt | date: 'short' }}</td>
+            <td><of-order-status [status]="order.status" /></td>
+            <td class="numeric">{{ order.itemCount }}</td>
+            <td class="numeric">{{ order.total | currency: order.currency }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<div class="actions">
+  @if (orders.nextCursor()) {
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="orders.loading()"
+      (click)="orders.loadMore()"
+    >
+      Carregar mais
+    </button>
+  }
+  <p class="muted">
+    Pedidos recém-criados ou alterados podem levar alguns instantes para aparecer aqui.
+  </p>
+</div>
