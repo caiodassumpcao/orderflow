@@ -7,8 +7,10 @@ import com.caiodassumpcao.orderflow.orders.application.port.OrderEventOutbox;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderProjectionStore;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderReadModel;
 import com.caiodassumpcao.orderflow.orders.application.port.OrderRepository;
+import com.caiodassumpcao.orderflow.orders.application.port.OrderStatistics;
 import com.caiodassumpcao.orderflow.orders.application.port.UnitOfWork;
 import com.caiodassumpcao.orderflow.orders.application.projection.OrderProjectionService;
+import com.caiodassumpcao.orderflow.orders.application.query.DashboardQueryService;
 import com.caiodassumpcao.orderflow.orders.application.query.OrderQueryService;
 import com.caiodassumpcao.orderflow.orders.domain.OrderId;
 import com.caiodassumpcao.orderflow.shared.id.UuidV7;
@@ -39,6 +41,11 @@ public class OrdersConfiguration {
   @Bean
   OrderQueryService orderQueryService(OrderReadModel readModel) {
     return new OrderQueryService(readModel);
+  }
+
+  @Bean
+  DashboardQueryService dashboardQueryService(OrderStatistics statistics, Clock clock) {
+    return new DashboardQueryService(statistics, clock);
   }
 
   @Bean
