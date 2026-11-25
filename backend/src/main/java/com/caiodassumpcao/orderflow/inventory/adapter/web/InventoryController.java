@@ -9,6 +9,8 @@ import com.caiodassumpcao.orderflow.inventory.domain.StockItem;
 import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -84,6 +86,7 @@ class InventoryController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize(Roles.HAS_ADMIN)
   @Operation(summary = "Cadastra um produto", description = "SKU já cadastrado responde 409.")
+  @ApiResponse(responseCode = "201", description = "Produto cadastrado")
   ResponseEntity<StockItemResponse> registerProduct(
       @Valid @RequestBody RegisterProductRequest request) {
     StockItem item =
@@ -127,7 +130,8 @@ class InventoryController {
    *
    * @param nextCursor valor para o parâmetro {@code cursor} da próxima página; nulo na última
    */
-  record StockPageResponse(List<StockItemResponse> items, String nextCursor) {}
+  record StockPageResponse(
+      List<StockItemResponse> items, @Schema(types = {"string", "null"}) String nextCursor) {}
 
   /**
    * Situação do produto.

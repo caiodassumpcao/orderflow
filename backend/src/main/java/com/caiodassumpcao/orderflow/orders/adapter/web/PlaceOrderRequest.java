@@ -25,6 +25,7 @@ record PlaceOrderRequest(
     @NotNull @Size(min = 1, max = 50) List<@NotNull @Valid Item> items) {
 
   /** Item do pedido. */
+  @Schema(name = "PlaceOrderItem")
   record Item(
       @Schema(example = "SKU-001")
           @NotBlank

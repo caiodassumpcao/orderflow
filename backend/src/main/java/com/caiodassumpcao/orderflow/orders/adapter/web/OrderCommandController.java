@@ -9,6 +9,7 @@ import com.caiodassumpcao.orderflow.orders.domain.OrderId;
 import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -51,6 +52,7 @@ class OrderCommandController {
       description =
           "Repetir a requisição com a mesma Idempotency-Key devolve o pedido original "
               + "(header Idempotency-Replayed: true); reutilizar a chave com outro conteúdo é 422.")
+  @ApiResponse(responseCode = "201", description = "Pedido criado, ou o original numa repetição")
   ResponseEntity<OrderResponse> placeOrder(
       @AuthenticationPrincipal Jwt jwt,
       @Parameter(description = "8 a 128 caracteres: letras, dígitos, '-' ou '_'")
