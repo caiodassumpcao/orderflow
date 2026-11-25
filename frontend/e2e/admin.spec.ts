@@ -25,11 +25,12 @@ test.describe('operation', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Painel da operação' })).toBeVisible();
     const indicators = page.getByRole('list', { name: 'Indicadores' });
-    await expect(indicators.getByText('3', { exact: true })).toBeVisible();
+    await expect(indicators.getByText('3 no total')).toBeVisible();
     await expect(indicators.getByText(/R\$\s*139,80/)).toBeVisible();
-    await expect(page.getByRole('region', { name: /últimos 7 dias/ }).getByRole('row')).toHaveCount(
-      8,
-    );
+    await expect(
+      page.getByRole('list', { name: 'Pedidos e cancelados por dia' }).getByRole('listitem'),
+    ).toHaveCount(7);
+    await expect(page.getByRole('region', { name: 'Estoque baixo' })).toContainText('Esgotado');
     await expectNoA11yViolations(page);
   });
 
@@ -38,12 +39,14 @@ test.describe('operation', () => {
     await expect(page.getByRole('cell', { name: 'another-customer' })).toBeVisible();
     await expectNoA11yViolations(page);
 
-    await page.getByLabel('Status').selectOption('CONFIRMED');
-    await page.getByRole('button', { name: 'Filtrar' }).click();
+    await page
+      .getByRole('group', { name: 'Filtrar por status' })
+      .getByRole('button', { name: 'Confirmado' })
+      .click();
     await expect(page.getByRole('table').getByRole('link')).toHaveCount(1);
     await page.getByRole('link', { name: `Pedido ${confirmedId.slice(0, 8)}` }).click();
 
-    await expect(page.getByText(CUSTOMER.sub)).toBeVisible();
+    await expect(page.getByText(/^\s*Cliente:/)).toContainText(CUSTOMER.sub);
     await page.getByRole('button', { name: 'Marcar como enviado' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Marcar como enviado' }).click();
 
@@ -54,7 +57,7 @@ test.describe('operation', () => {
 
   test('restocks a sold out product and registers a new one', async ({ page }) => {
     await page.goto('/admin/estoque');
-    await expect(page.getByText('(esgotado)')).toBeVisible();
+    await expect(page.getByText('Esgotado', { exact: true })).toBeVisible();
     await expectNoA11yViolations(page);
 
     await page.getByRole('button', { name: 'Repor Kit de adesivos' }).click();
@@ -65,7 +68,7 @@ test.describe('operation', () => {
     await expect(
       page.getByText('Estoque de Kit de adesivos atualizado: 25 disponíveis.'),
     ).toBeVisible();
-    await expect(page.getByText('(esgotado)')).toHaveCount(0);
+    await expect(page.getByText('Esgotado', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('SKU').fill('SKU-006');
     await page.getByLabel('Nome').fill('Garrafa térmica');

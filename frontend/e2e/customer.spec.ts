@@ -46,7 +46,10 @@ test.describe('customer', () => {
     await expect(page.getByRole('button', { name: 'Cancelar pedido' })).toHaveCount(0);
     await expectNoA11yViolations(page);
 
-    await page.getByRole('link', { name: '← Meus pedidos' }).click();
+    await page
+      .getByRole('navigation', { name: 'Trilha' })
+      .getByRole('link', { name: 'Meus pedidos' })
+      .click();
     await expect(page.getByRole('table').getByRole('link')).toHaveCount(2);
   });
 
