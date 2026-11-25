@@ -101,10 +101,10 @@ Princípios:
 | Evento | Produtor | Consumidores |
 |---|---|---|
 | `OrderCreated` | orders | inventory, projector |
-| `StockReserved` | inventory | orders (saga), projector |
-| `StockRejected` | inventory | orders (saga), projector |
+| `StockReserved` | inventory | orders (saga) |
+| `StockRejected` | inventory | orders (saga) |
 | `OrderConfirmed` | orders | projector |
-| `OrderShipped` | orders | projector |
+| `OrderShipped` | orders | inventory (baixa o reservado), projector |
 | `OrderCancelled` | orders | inventory (libera estoque), projector |
 
 Envelope padrão do evento:
@@ -121,7 +121,7 @@ Envelope padrão do evento:
 }
 ```
 
-Tópicos: `order.events`, `inventory.events`, mais tópicos de retry e DLQ por consumer (`<tópico>.<consumer>.retry-<n>` e `<tópico>.<consumer>.dlq`). Chave de partição: `aggregateId` (ordenação por pedido). Contratos versionados em [`docs/events/`](docs/events/order-events.md).
+Tópicos: `order.events`, `inventory.events`, mais tópicos de retry e DLQ por consumer (`<tópico>.<consumer>.retry-<n>` e `<tópico>.<consumer>.dlq`). Chave de partição: `aggregateId` (ordenação por pedido). Contratos versionados em [`docs/events/`](docs/events/order-events.md) ([pedidos](docs/events/order-events.md), [inventário](docs/events/inventory-events.md)).
 
 ## 5. Estrutura do repositório
 
@@ -206,7 +206,9 @@ Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (so
 | GET | `/api/v1/inventory/{sku}` | Consulta estoque | ADMIN |
 | GET | `/api/v1/dashboard/summary` | Métricas agregadas | ADMIN |
 
-Implementados: os três `POST` (Fase 1) e as duas consultas `GET` de pedidos (Fase 3). Inventário e dashboard chegam nas Fases 4 e 6, e o controle por papel (`USER`/`ADMIN`) na Fase 5: hoje qualquer usuário autenticado pode enviar um pedido; cancelamento e consultas já são restritos ao dono, e a visão de administrador (todos os pedidos) entra com o RBAC.
+Implementados: os três `POST` (Fase 1), as duas consultas `GET` de pedidos (Fase 3) e a consulta de estoque (Fase 4). O dashboard chega na Fase 6 e o controle por papel (`USER`/`ADMIN`) na Fase 5: hoje qualquer usuário autenticado pode enviar um pedido e consultar estoque; cancelamento e consultas de pedidos já são restritos ao dono, e a visão de administrador (todos os pedidos) entra com o RBAC.
+
+**Ciclo do pedido (saga, [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)):** o `POST` responde `CREATED`; em seguida o inventário reserva o estoque e o pedido vira `CONFIRMED`, ou o recusa (sem estoque, SKU inexistente ou preço/moeda diferente do catálogo) e o pedido vira `CANCELLED` com o motivo em `cancellationReason`. Só pedidos `CONFIRMED` podem ser enviados; o cancelamento pelo cliente vale enquanto o pedido está `CREATED`.
 
 **Consultas (modelo de leitura):** `GET /api/v1/orders` lista os pedidos do cliente do mais novo para o mais antigo, com `status` opcional, `limit` de 1 a 100 (padrão 20) e paginação keyset: a resposta traz `nextCursor`, que vai no parâmetro `cursor` da próxima chamada ([ADR-0006](docs/adr/0006-keyset-pagination.md)). As consultas são **eventualmente consistentes** com os comandos ([ADR-0002](docs/adr/0002-cqrs-event-projections.md)): logo após criar ou cancelar, o `GET` pode levar menos de um segundo para refletir a mudança; a resposta do próprio comando já traz o estado novo.
 
@@ -218,6 +220,7 @@ Padrões: versionamento em URL, paginação por cursor/offset documentada, erros
 
 - Dois schemas: `command` (agregados + `outbox` + `processed_events`) e `query` (projeções).
 - Modelo de escrita atual (V2 e V3): `command.orders` (versão para concorrência otimista), `command.order_lines`, `command.outbox` (payload `jsonb`, `position` sequencial que define a ordem de publicação, índice parcial para eventos pendentes) e `command.idempotency_keys`; `aggregate_version` na outbox (V5) e `command.processed_events` (V4).
+- Inventário (V7): `command.stock_items` (preço de catálogo, unidades livres e reservadas), `command.stock_reservations` e itens. A V8 torna a versão da outbox única por tipo de agregado. Em dev, um estoque de demonstração (`SKU-001` a `SKU-005`) é carregado de `db/dev-data`.
 - Modelo de leitura (V6): `query.order_summaries` e `query.order_items`, mantidos pelo projector; índice `(customer_id, created_at DESC, order_id DESC)` para a paginação keyset.
 - Migrations Flyway imutáveis e versionadas.
 - Diagrama ER em `docs/db/er-diagram.md`.
@@ -308,16 +311,16 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 0 — Fundação:** repositório, Git Flow, Compose, esqueletos backend/frontend, CI base, ADR-0001
 - [x] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
   - Endpoints de escrita incluídos nesta fase (criar, cancelar, enviar), com idempotência e Problem Details.
-  - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
 - [x] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
   - Entrega a infraestrutura (relay, tópicos, idempotência, retry/DLQ, métricas) validada com um consumer de teste; os primeiros consumers reais são o projector (Fase 3) e o inventário (Fase 4).
 - [x] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
   - Projector tolerante a eventos repetidos e fora de ordem (via `aggregateVersion`), com teste dedicado; consultas restritas ao dono.
   - Índices além do da paginação keyset ficam para o estudo da Fase 8.
 - [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
-  - Decidir a fonte de verdade do preço (catálogo no inventário ou serviço próprio) e deixar de aceitar o preço unitário enviado pelo cliente.
+  - Saga coreografada entre pedidos e inventário; o inventário é a fonte de verdade do preço e recusa pedidos com preço ou moeda diferentes do catálogo ([ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)).
+  - Ainda não há endpoint para cadastrar produtos ou repor estoque (em dev há um estoque de demonstração); entra com as telas de administração (Fase 6), protegido pelo RBAC da Fase 5.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
-  - Exigir o papel `ADMIN` em `POST /api/v1/orders/{id}/ship` (hoje basta estar autenticado).
+  - Exigir o papel `ADMIN` em `POST /api/v1/orders/{id}/ship` e `GET /api/v1/inventory/{sku}` (hoje basta estar autenticado).
   - Decidir se `/actuator/health/{liveness,readiness}` fica público fora do perfil `dev` (sem detalhes) e, se sim, adicionar `HEALTHCHECK` à imagem da API. Hoje o health exige token em produção.
   - Adicionar o OWASP Dependency-Check ao CI.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
@@ -346,6 +349,7 @@ Registradas em `docs/adr/` (formato MADR). Iniciais:
 - ADR-0005: Keycloak para identidade
 - [ADR-0006](docs/adr/0006-keyset-pagination.md): Paginação keyset nas listagens grandes
 - [ADR-0007](docs/adr/0007-non-blocking-retry.md): Retry não bloqueante por consumer, com DLQ
+- [ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md): Saga coreografada de estoque, com o preço validado pelo inventário
 
 ## 18. Definition of Done
 

@@ -54,6 +54,10 @@ Corrija os campos e reenvie.
 
 **409.** A operação não é permitida no estado atual do pedido (ex.: enviar um pedido ainda não confirmado, cancelar um pedido já enviado). O campo extra `currentStatus` traz o estado atual.
 
+## stock-item-not-found
+
+**404.** O produto consultado não existe no catálogo do inventário.
+
 ## concurrent-modification
 
 **409.** Outra requisição alterou o pedido ao mesmo tempo (conflito de versão). Releia o estado e repita a operação se ainda fizer sentido.
