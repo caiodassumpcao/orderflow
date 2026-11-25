@@ -59,6 +59,13 @@
   }
 </header>
 
+@if (auth.loginUnavailable()) {
+  <div class="login-alert" role="alert">
+    <p>Não foi possível conectar ao serviço de login. Tente novamente em instantes.</p>
+    <button type="button" class="retry" (click)="auth.login()">Tentar de novo</button>
+  </div>
+}
+
 <main #main id="conteudo" class="app-main" tabindex="-1">
   <router-outlet />
 </main>

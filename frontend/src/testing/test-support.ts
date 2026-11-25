@@ -55,6 +55,7 @@ export interface FakeAuth {
   readonly displayName: ReturnType<typeof signal<string>>;
   readonly isCustomer: ReturnType<typeof signal<boolean>>;
   readonly isAdmin: ReturnType<typeof signal<boolean>>;
+  readonly loginUnavailable: ReturnType<typeof signal<boolean>>;
   readonly login: jest.Mock;
   readonly logout: jest.Mock;
 }
@@ -67,6 +68,7 @@ export function fakeAuth(
     displayName: signal(state.name ?? ''),
     isCustomer: signal(state.customer ?? false),
     isAdmin: signal(state.admin ?? false),
+    loginUnavailable: signal(false),
     login: jest.fn(),
     logout: jest.fn(),
   };

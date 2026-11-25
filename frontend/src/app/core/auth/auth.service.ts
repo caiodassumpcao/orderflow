@@ -1,7 +1,7 @@
-import { Injectable, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { Observable, map, switchMap } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
+import { Observable, filter, map, switchMap } from 'rxjs';
 import { Role, rolesFromAccessToken } from './roles';
 
 /** Claims do id_token usados na interface. */
@@ -41,6 +41,20 @@ export class AuthService {
   readonly isCustomer = computed(() => this.roles().includes(Role.User));
   readonly isAdmin = computed(() => this.roles().includes(Role.Admin));
 
+  private readonly unavailable = signal(false);
+  /** O provedor de login não respondeu (descoberta OIDC falhou) na última tentativa de entrar. */
+  readonly loginUnavailable = this.unavailable.asReadonly();
+
+  constructor() {
+    inject(PublicEventsService)
+      .registerForEvents()
+      .pipe(
+        filter((event) => event.type === EventTypes.ConfigLoadingFailed),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.unavailable.set(true));
+  }
+
   /** Para guards: lê o token atual do storage, sem depender do estado dos signals. */
   hasRole(role: Role): Observable<boolean> {
     return this.oidc
@@ -49,6 +63,7 @@ export class AuthService {
   }
 
   login(): void {
+    this.unavailable.set(false);
     this.oidc.authorize();
   }
 
