@@ -2,6 +2,8 @@ package com.caiodassumpcao.orderflow.orders.adapter.web;
 
 import com.caiodassumpcao.orderflow.orders.application.query.OrderPage;
 import com.caiodassumpcao.orderflow.orders.application.query.OrderSummary;
+import com.caiodassumpcao.orderflow.orders.domain.OrderStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -13,7 +15,8 @@ import java.util.UUID;
  * @param items pedidos, do mais novo para o mais antigo
  * @param nextCursor valor para o parâmetro {@code cursor} da próxima página; nulo na última
  */
-record OrderPageResponse(List<Summary> items, String nextCursor) {
+record OrderPageResponse(
+    List<Summary> items, @Schema(types = {"string", "null"}) String nextCursor) {
 
   static OrderPageResponse of(OrderPage page) {
     return new OrderPageResponse(
@@ -22,9 +25,10 @@ record OrderPageResponse(List<Summary> items, String nextCursor) {
   }
 
   /** Linha da listagem. */
+  @Schema(name = "OrderSummary")
   record Summary(
       UUID id,
-      String status,
+      @Schema(implementation = OrderStatus.class) String status,
       String currency,
       BigDecimal total,
       int itemCount,

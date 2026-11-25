@@ -2,6 +2,19 @@
 
 Os eventos são gravados na tabela `command.outbox` na mesma transação que altera o pedido (ver [ADR-0003](../adr/0003-transactional-outbox.md)). O relay da outbox os publica no tópico `order.events`, com `aggregateId` como chave de partição (ordem garantida por pedido no tópico). Veja [`docs/messaging.md`](../messaging.md) para retry, DLQ e a ordem do lado do consumer.
 
+## Contratos verificáveis
+
+Cada contrato também existe como **JSON Schema 2020-12** em [`schemas/`](schemas/), com um exemplo de mensagem completa em [`examples/`](examples/). O build do backend verifica os dois lados:
+
+- **Produtores** (`OrderEventContractTest`, `InventoryEventContractTest`): cada tipo de evento gravado na outbox, montado como o relay publica, valida contra o schema do envelope e do payload.
+- **Consumidores** (`InventoryConsumerContractTest`, `OrderConsumersContractTest`): o inventário, a saga e o projector recebem os exemplos e chamam o caso de uso esperado.
+- **Exemplos** (`EventExamplesContractTest`): todo exemplo valida contra o schema e é lido pelo codec.
+
+Regras de evolução:
+
+- **Compatível**, mesma versão: adicionar um campo opcional. Atualize o schema e o exemplo no mesmo PR; os consumers ignoram campos desconhecidos.
+- **Incompatível**, nova versão (`version: 2`, schema `*.v2.schema.json`): remover, renomear ou mudar o tipo de um campo, ou torná-lo obrigatório. O produtor publica as duas versões até todos os consumers migrarem.
+
 ## Envelope
 
 Cada linha da outbox guarda os campos do envelope em colunas e o payload em `jsonb`. Publicado, o evento tem esta forma:

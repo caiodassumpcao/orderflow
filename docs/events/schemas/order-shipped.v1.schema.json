@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/caiodassumpcao/orderflow/blob/main/docs/events/schemas/order-shipped.v1.schema.json",
+  "title": "OrderShipped (v1) — payload",
+  "description": "Pedido enviado; o inventário dá baixa nas unidades reservadas.",
+  "type": "object",
+  "required": ["orderId"],
+  "additionalProperties": false,
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    }
+  }
+}

@@ -141,6 +141,7 @@ orderflow/
 │   ├── src/app/features/{home,orders,admin/{dashboard,inventory,...},forbidden}
 │   ├── public/config.json                      # config de runtime em dev
 │   ├── e2e/                                    # Playwright + axe, com IdP e API falsos
+│   ├── e2e-stack/                              # Playwright contra a stack real (Keycloak, API, Kafka)
 │   ├── nginx.conf.template                     # nginx da imagem (CSP e config.json do ambiente)
 │   └── package.json
 ├── infra/
@@ -150,9 +151,10 @@ orderflow/
 ├── docs/
 │   ├── architecture.md
 │   ├── adr/                                    # decisões arquiteturais
+│   ├── openapi.yaml                            # contrato da API, gerado e verificado no build
 │   ├── api/problems.md                         # catálogo de erros (RFC 9457)
 │   ├── messaging.md                            # relay, tópicos, retry/DLQ, métricas
-│   ├── events/                                 # contratos dos eventos
+│   ├── events/{schemas,examples}/              # contratos dos eventos (JSON Schema) e exemplos
 │   ├── db/{er-diagram.md,performance.md}
 │   ├── accessibility.md
 │   └── media/
@@ -192,7 +194,7 @@ make frontend-run             # SPA em http://localhost:4200
 
 Prometheus e Grafana entram na Fase 9. As portas vêm do `.env`; se a 5432 já estiver ocupada, ajuste `POSTGRES_PORT`.
 
-**Comandos úteis (`make help`):** `test`, `test-e2e`, `lint`, `format`, `build`, `docker-build` (gera as imagens `orderflow-api` e `orderflow-web`), `down`, `clean`.
+**Comandos úteis (`make help`):** `test`, `test-e2e`, `test-e2e-stack` (e2e contra a stack local no ar), `openapi` (regenera `docs/openapi.yaml`), `lint`, `format`, `build`, `docker-build` (gera as imagens `orderflow-api` e `orderflow-web`), `down`, `clean`.
 
 > Usuários de demonstração (apenas dev) ficam em `infra/keycloak/realm-orderflow.json`: `dev-user` (cliente, papel `USER`) e `dev-admin` (operação, papéis `USER` e `ADMIN`), com as senhas definidas no `.env` (`ORDERFLOW_DEV_USER_PASSWORD`, `ORDERFLOW_DEV_ADMIN_PASSWORD`). Nenhum segredo real é versionado.
 
@@ -208,7 +210,7 @@ Ex.: `docker run -p 127.0.0.1:4200:8080 orderflow-web:local` serve a imagem na m
 
 ## 7. API
 
-Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (somente no perfil `dev`); a exportação para `docs/openapi.yaml` no build entra na Fase 7.
+Documentação interativa em `/swagger-ui.html` e contrato em `/v3/api-docs` (somente no perfil `dev`). O contrato publicado fica em [`docs/openapi.yaml`](docs/openapi.yaml): o build do backend o gera a partir da API e falha se o arquivo versionado estiver diferente (regenere com `make openapi`). O frontend valida contra ele os corpos que envia, as respostas que espera e a API simulada dos e2e.
 
 | Método | Rota | Descrição | Papel |
 |---|---|---|---|
@@ -264,7 +266,7 @@ Resultados (preencher com medições reais):
 - **Consumers idempotentes:** tabela `processed_events (event_id, consumer)` com chave primária, gravada na mesma transação que os efeitos do consumer.
 - **Retry não bloqueante com backoff** em tópicos próprios de cada consumer (`<tópico>.<consumer>.retry-<n>`) e **DLQ** (`<tópico>.<consumer>.dlq`) após esgotar as tentativas; poison pills vão direto para a DLQ. Métrica `orderflow.messaging.dead.letters` para alerta.
 - **Ordenação** garantida por chave de partição (`aggregateId`).
-- **Contratos** versionados e testados (contract tests nos produtores e consumers).
+- **Contratos** versionados em JSON Schema ([`docs/events/schemas`](docs/events/schemas)) e testados nos dois lados: cada publisher valida o que grava na outbox, e cada consumer recebe os exemplos de [`docs/events/examples`](docs/events/examples).
 - Cenários de falha cobertos em testes (Fase 2): broker indisponível, confirmação parcial do broker, mensagem duplicada, falha passageira recuperada no retry, falha persistente até a DLQ e payload inválido (poison pill). Mensagem fora de ordem é testada em cada consumer (Fases 3 e 4), porque o retry não bloqueante não preserva a ordem no consumer ([ADR-0007](docs/adr/0007-non-blocking-retry.md)).
 - Detalhes, configuração e receita para novos consumers em [`docs/messaging.md`](docs/messaging.md).
 
@@ -277,7 +279,8 @@ Resultados (preencher com medições reais):
 | Integração | Testcontainers (Postgres, Kafka) | Persistência, outbox, consumers, retry/DLQ |
 | API | `@WebMvcTest`, MockMvc, REST Assured | Contratos HTTP, segurança, erros |
 | Frontend unitário | Jest (jest-preset-angular), Angular Testing Library | Componentes, serviços, guards, interceptação de erros |
-| E2E | Playwright | Fluxos críticos de cliente e operação, com provedor OIDC e API falsos (login PKCE completo, tokens RS256); contra a stack real na Fase 7 |
+| Contrato | JSON Schema (networknt), OpenAPI + ajv | Eventos (produtores e consumidores), `docs/openapi.yaml` contra a API, requisições e respostas da SPA contra o contrato |
+| E2E | Playwright | Fluxos de cliente e operação com provedor OIDC e API simulados (validados contra o contrato); fluxos críticos na stack real (Keycloak, API, Kafka e imagem nginx) no job `e2e-stack` |
 | Acessibilidade | axe-core (Playwright) | Todas as telas e diálogos, nos temas claro e escuro, sem violações WCAG 2.2 AA |
 
 Metas: cobertura backend ≥ 80% (linhas) e ≥ 70% (branches) no domínio e aplicação, frontend ≥ 80%; CI falha abaixo disso. Execução: `make test`.
@@ -292,7 +295,7 @@ Meta **WCAG 2.2 nível AA**.
 - Contraste mínimo 4.5:1, suporte a `prefers-reduced-motion` e zoom de 200%.
 - Tabelas com `caption`/`scope`; status nunca comunicado só por cor.
 - Numa SPA a página não recarrega: a cada navegação o foco vai para o conteúdo principal e o título da aba muda; diálogos de confirmação prendem o foco e o devolvem ao botão de origem; o andamento da saga de estoque é anunciado numa região `role="status"`.
-- Auditoria com axe + Lighthouse no CI; relatório e score em `docs/accessibility.md`.
+- Auditoria com axe em todas as telas no CI e Lighthouse na imagem de produção (acessibilidade 100); verificações, resultados e roteiro de teste manual com leitor de tela em [`docs/accessibility.md`](docs/accessibility.md).
 - Teste manual com NVDA ou VoiceOver documentado.
 
 ## 12. Segurança
@@ -352,14 +355,18 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
   - Probes `liveness`/`readiness` públicos e sem detalhes; `HEALTHCHECK` na imagem da API.
   - OWASP Dependency-Check no CI (`dependency-check.yml`); requer o secret `NVD_API_KEY`.
   - CSRF está desligado no `SecurityConfig` porque a API é stateless e autenticada só por `Authorization: Bearer` (sem cookie de sessão, não há vetor de CSRF); o CodeQL aponta isso como `java/spring-disabled-csrf-protection`. Reativar o CSRF se a autenticação passar a usar cookie (ex.: BFF).
-- [ ] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
+- [x] **Fase 6 — Frontend:** login OIDC, listagem, detalhe, criação, dashboard
   - Login OIDC com PKCE na SPA ([ADR-0009](docs/adr/0009-spa-oidc-pkce.md)); telas do cliente (pedidos, criação com preço de catálogo, detalhe que acompanha a saga e tolera o atraso da projeção, cancelamento) e da operação (painel, todos os pedidos com envio, estoque com cadastro e reposição).
   - Backend: catálogo para clientes, cadastro de produto e reposição com `If-Match` (V10: nome do produto) e `GET /api/v1/dashboard/summary`.
   - Imagem `orderflow-web` configurada em runtime (`config.json` e CSP gerados das variáveis `ORDERFLOW_*`).
-  - E2E com provedor OIDC e API falsos e axe em todas as telas; os e2e contra a stack real (Keycloak + API) ficam para a Fase 7.
+  - E2E com provedor OIDC e API falsos e axe em todas as telas.
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
-  - E2E contra a stack real (Keycloak, API, Kafka) no CI, além dos e2e com IdP e API falsos.
-  - Mensagem na tela quando o provedor OIDC estiver fora do ar (hoje o botão Entrar só registra o erro no console).
+  - E2E na stack real no CI (job `e2e-stack`): login no Keycloak, compra confirmada pela saga e enviada, recusa por falta de estoque, cadastro e reposição de produto.
+  - Contrato OpenAPI publicado em `docs/openapi.yaml` e verificado no build; SPA e API simulada validados contra ele. Contratos de eventos em JSON Schema, com testes de produtor e consumidor.
+  - `docs/accessibility.md` com as verificações automáticas, o resultado do Lighthouse e o roteiro de teste manual com leitor de tela (execução manual, registrada no próprio documento).
+  - Mensagem quando o serviço de login está fora do ar; indicador de carregamento estável e com movimento reduzido.
+- [ ] **Fase 7.1 — Design e UX:** revisão visual da plataforma (cabeçalho e navegação, espaçamentos, cards, tabelas, telas de pedido e de operação), mantendo WCAG 2.2 AA e os e2e/axe verdes
+  - O indicador de carregamento já foi corrigido na Fase 7 (espaço fixo, sem piscar em respostas rápidas e texto estático com movimento reduzido).
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
   - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
   - O dashboard agrega `query.order_summaries` a cada requisição; medir e, se preciso, trocar por uma projeção agregada.

@@ -7,6 +7,7 @@ import com.caiodassumpcao.orderflow.inventory.domain.StockItem;
 import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -64,7 +65,8 @@ class CatalogController {
    *
    * @param nextCursor valor para o parâmetro {@code cursor} da próxima página; nulo na última
    */
-  record CatalogPageResponse(List<CatalogItem> items, String nextCursor) {}
+  record CatalogPageResponse(
+      List<CatalogItem> items, @Schema(types = {"string", "null"}) String nextCursor) {}
 
   /**
    * Produto à venda.

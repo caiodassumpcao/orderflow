@@ -6,6 +6,7 @@ import com.caiodassumpcao.orderflow.orders.application.query.DashboardSummary;
 import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -43,6 +44,7 @@ class DashboardController {
   @GetMapping("/summary")
   @PreAuthorize(Roles.HAS_ADMIN)
   @Operation(
+      operationId = "getDashboardSummary",
       summary = "Resumo dos pedidos: status, receita confirmada e pedidos por dia",
       description = "Eventualmente consistente, como as demais consultas.")
   DashboardSummaryResponse summary(
@@ -107,6 +109,7 @@ class DashboardController {
   }
 
   /** Receita numa moeda. */
+  @Schema(name = "RevenueByCurrency")
   record Revenue(String currency, BigDecimal amount) {}
 
   /**
@@ -114,6 +117,7 @@ class DashboardController {
    *
    * @param cancelled quantos desses pedidos estão cancelados
    */
+  @Schema(name = "DailyOrders")
   record Day(LocalDate date, long orders, long cancelled) {
 
     static Day of(DailyOrders daily) {

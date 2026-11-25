@@ -5,9 +5,7 @@
   </button>
 </div>
 
-@if (loading()) {
-  <mat-progress-bar mode="indeterminate" aria-label="Carregando o painel" />
-}
+<of-loading-indicator [active]="loading()" label="Carregando o painel" />
 <of-error-alert [error]="error()" />
 
 @if (summary(); as summary) {

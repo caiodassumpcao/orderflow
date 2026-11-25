@@ -1,0 +1,14 @@
+{
+  "eventId": "01a20f13-6d33-7e40-8b2c-7f4e1a9d6c33",
+  "type": "OrderCancelled",
+  "version": 1,
+  "aggregateId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+  "aggregateVersion": 1,
+  "occurredAt": "2026-11-24T19:25:00.000Z",
+  "correlationId": "4f1c2b7e-8a43-4d0e-9a51-2b9e6f0c1d77",
+  "payload": {
+    "orderId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+    "previousStatus": "CREATED",
+    "reason": "Changed my mind"
+  }
+}

@@ -10,7 +10,8 @@
     "test:ci": "jest --ci --coverage",
     "lint": "eslint . && prettier --check .",
     "format": "eslint . --fix && prettier --write .",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:stack": "playwright test -c playwright.stack.config.ts"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
@@ -38,6 +39,8 @@
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "@types/jest": "30.0.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "angular-eslint": "22.8.0",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
@@ -47,7 +50,8 @@
     "jsdom": "31.0.1",
     "prettier": "3.8.1",
     "typescript": "6.0.2",
-    "typescript-eslint": "8.74.0"
+    "typescript-eslint": "8.74.0",
+    "yaml": "2.9.1"
   },
   "engines": {
     "node": ">=24.15.0 <25"

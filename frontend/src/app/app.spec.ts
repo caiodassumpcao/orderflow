@@ -43,6 +43,18 @@ describe('App', () => {
     expect(auth.login).toHaveBeenCalled();
   });
 
+  it('warns when the login service is unavailable and lets the user retry', async () => {
+    const auth = fakeAuth();
+    await setup(auth);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    auth.loginUnavailable.set(true);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('serviço de login');
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(auth.login).toHaveBeenCalled();
+  });
+
   it('shows customers their links, their name and sign out', async () => {
     const auth = fakeAuth({ authenticated: true, customer: true, name: 'Ana' });
     await setup(auth);

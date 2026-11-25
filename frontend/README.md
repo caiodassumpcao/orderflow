@@ -37,3 +37,10 @@ Rodam sem backend e sem Keycloak:
 - `e2e/support/fake-idp.ts` responde descoberta, JWKS, autorização (exige PKCE S256), token e logout. Os tokens são JWT RS256 assinados com uma chave gerada a cada execução.
 - `e2e/support/fake-api.ts` imita os contratos da API com estado: projeção atrasada, saga de estoque, idempotência e `If-Match`.
 - Cada tela, inclusive os diálogos, passa pelo axe (WCAG 2.2 AA) nos temas claro e escuro.
+- A API falsa valida cada requisição e resposta contra `docs/openapi.yaml`; um desvio falha o teste.
+
+`e2e-stack/` (`npm run e2e:stack` ou `make test-e2e-stack`) roda os fluxos críticos contra a stack real: Keycloak, API e SPA em `http://localhost:4200`. As senhas dos usuários de dev vêm do `.env` da raiz. No CI, o job `e2e-stack` sobe tudo sozinho.
+
+## Contrato da API
+
+`src/testing/openapi-contract.ts` carrega `docs/openapi.yaml`, gerado e verificado no build do backend, e fecha os objetos (campos extras são erro). `src/app/core/api/contract.spec.ts` valida as fábricas de resposta usadas em todos os testes e os corpos que os clientes HTTP enviam.

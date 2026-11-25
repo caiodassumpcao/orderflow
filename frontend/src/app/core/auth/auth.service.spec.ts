@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { AuthenticatedResult, OidcSecurityService, UserDataResult } from 'angular-auth-oidc-client';
-import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
+import {
+  AuthenticatedResult,
+  EventTypes,
+  OidcClientNotification,
+  OidcSecurityService,
+  PublicEventsService,
+  UserDataResult,
+} from 'angular-auth-oidc-client';
+import { BehaviorSubject, Subject, firstValueFrom, of } from 'rxjs';
 import { AuthService } from './auth.service';
 
 function accessToken(roles: string[]): string {
@@ -25,6 +32,7 @@ describe('AuthService', () => {
     authorize: jest.fn(),
     logoff: jest.fn(() => of(null)),
   };
+  const events$ = new Subject<OidcClientNotification<unknown>>();
   let auth: AuthService;
 
   beforeEach(() => {
@@ -32,7 +40,10 @@ describe('AuthService', () => {
     authenticated$.next({ isAuthenticated: false, allConfigsAuthenticated: [] });
     userData$.next({ userData: null, allUserData: [] });
     TestBed.configureTestingModule({
-      providers: [{ provide: OidcSecurityService, useValue: oidc }],
+      providers: [
+        { provide: OidcSecurityService, useValue: oidc },
+        { provide: PublicEventsService, useValue: { registerForEvents: () => events$ } },
+      ],
     });
     auth = TestBed.inject(AuthService);
   });
@@ -77,5 +88,16 @@ describe('AuthService', () => {
 
     expect(oidc.authorize).toHaveBeenCalled();
     expect(oidc.logoff).toHaveBeenCalled();
+  });
+
+  it('tells when the identity provider could not be reached, until the next attempt', () => {
+    events$.next({ type: EventTypes.CheckingAuth, value: null });
+    expect(auth.loginUnavailable()).toBe(false);
+
+    events$.next({ type: EventTypes.ConfigLoadingFailed, value: null });
+    expect(auth.loginUnavailable()).toBe(true);
+
+    auth.login();
+    expect(auth.loginUnavailable()).toBe(false);
   });
 });

@@ -17,9 +17,7 @@
 
 <of-error-alert [error]="orders.error()" />
 
-@if (orders.loading()) {
-  <mat-progress-bar mode="indeterminate" aria-label="Carregando pedidos" />
-}
+<of-loading-indicator [active]="orders.loading()" label="Carregando pedidos" />
 
 @if (orders.loaded() && orders.items().length === 0) {
   <p>

@@ -10,6 +10,8 @@ Publicados pelo inventário em `inventory.events` em resposta ao `OrderCreated`,
 
 Consumidor atual: a saga de pedidos (`order-saga`), que confirma ou cancela o pedido.
 
+Os schemas (`stock-reserved.v1`, `stock-rejected.v1`) e os exemplos ficam em [`schemas/`](schemas/) e [`examples/`](examples/), verificados no build como descrito em [`order-events.md`](order-events.md#contratos-verificáveis).
+
 ## StockReserved (v1)
 
 Todos os itens do pedido foram reservados ao preço de catálogo.

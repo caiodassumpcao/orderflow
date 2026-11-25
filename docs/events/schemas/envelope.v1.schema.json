@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/caiodassumpcao/orderflow/blob/main/docs/events/schemas/envelope.v1.schema.json",
+  "title": "Envelope de evento (v1)",
+  "description": "Forma de toda mensagem publicada em order.events e inventory.events. O payload é validado pelo schema do tipo e da versão do evento.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "aggregateId",
+    "aggregateVersion",
+    "occurredAt",
+    "correlationId",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": { "$ref": "#/$defs/uuid", "description": "UUIDv7 único; consumers deduplicam por ele" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "OrderCreated",
+        "OrderConfirmed",
+        "OrderShipped",
+        "OrderCancelled",
+        "StockReserved",
+        "StockRejected"
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1, "description": "Versão do contrato do payload" },
+    "aggregateId": { "$ref": "#/$defs/uuid", "description": "Id do pedido (também é a chave da mensagem)" },
+    "aggregateVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Versão do agregado depois do evento; consumers ignoram versões já vistas"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?Z$"
+    },
+    "correlationId": { "type": ["string", "null"], "maxLength": 128 },
+    "payload": { "type": "object" }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    }
+  }
+}

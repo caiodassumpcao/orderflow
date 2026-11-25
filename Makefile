@@ -15,8 +15,8 @@ NPM     := cd frontend && npm
 
 .PHONY: help env-check up down logs ps \
         frontend-install backend-run frontend-run \
-        test test-backend test-frontend test-e2e \
-        lint lint-backend lint-frontend format \
+        test test-backend test-frontend test-e2e test-e2e-stack \
+        lint lint-backend lint-frontend format openapi \
         build docker-build clean
 
 help: ## Lista os alvos disponíveis
@@ -60,8 +60,11 @@ test-backend: ## Backend: unit, integração (Testcontainers), ArchUnit, cobertu
 test-frontend: ## Frontend: Jest com cobertura
 	$(NPM) run test:ci
 
-test-e2e: ## Playwright + axe (sobe o dev server sozinho)
+test-e2e: ## Playwright + axe (sobe o dev server sozinho; IdP e API simulados)
 	$(NPM) run e2e
+
+test-e2e-stack: env-check ## E2E contra a stack real (requer make up, make backend-run e a SPA em :4200)
+	$(NPM) run e2e:stack
 
 lint: lint-backend lint-frontend ## Verifica formatação e lint (backend e frontend)
 
@@ -74,6 +77,9 @@ lint-frontend:
 format: ## Aplica formatação (Spotless, ESLint --fix, Prettier)
 	$(MVNW) spotless:apply
 	$(NPM) run format
+
+openapi: ## Regenera docs/openapi.yaml a partir da API (o build falha se ele estiver desatualizado)
+	cd backend && OPENAPI_UPDATE=true ./mvnw -B verify -Dit.test=OpenApiContractIT -Dtest=none -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Dspotless.check.skip=true -Dcheckstyle.skip=true
 
 ## --- Build ---------------------------------------------------------------
 

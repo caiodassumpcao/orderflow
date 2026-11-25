@@ -1,0 +1,798 @@
+openapi: 3.1.0
+info:
+  description: Plataforma de pedidos event-driven com CQRS
+  license:
+    name: MIT
+  title: OrderFlow API
+  version: v1
+servers:
+- description: Mesma origem do contrato
+  url: /
+security:
+- bearer-jwt: []
+tags:
+- description: "Operação: todos os pedidos"
+  name: Admin
+- description: Produtos à venda e preço de catálogo
+  name: Catalog
+- description: Estoque e preço de catálogo
+  name: Inventory
+- description: Comandos de escrita de pedidos
+  name: Orders
+paths:
+  /api/v1/admin/orders:
+    get:
+      operationId: listAllOrders
+      parameters:
+      - description: Filtra por status
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+          enum:
+          - CREATED
+          - STOCK_RESERVED
+          - CONFIRMED
+          - SHIPPED
+          - CANCELLED
+      - description: Filtra por cliente (sub do token)
+        in: query
+        name: customerId
+        required: false
+        schema:
+          type: string
+          pattern: "^[A-Za-z0-9._:@-]{1,64}$"
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderPageResponse"
+          description: OK
+      summary: "Lista todos os pedidos, do mais novo para o mais antigo"
+      tags:
+      - Admin
+  /api/v1/admin/orders/{orderId}:
+    get:
+      operationId: getAnyOrder
+      parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderResponse"
+          description: OK
+      summary: Detalhe de qualquer pedido
+      tags:
+      - Admin
+  /api/v1/catalog:
+    get:
+      description: Em ordem de SKU; envie o nextCursor da resposta no parâmetro cursor.
+      operationId: listProducts
+      parameters:
+      - description: Itens por página (1 a 100)
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+          maximum: 100
+          minimum: 1
+      - description: nextCursor da página anterior
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogPageResponse"
+          description: OK
+      summary: Lista os produtos à venda
+      tags:
+      - Catalog
+  /api/v1/dashboard/summary:
+    get:
+      description: "Eventualmente consistente, como as demais consultas."
+      operationId: getDashboardSummary
+      parameters:
+      - description: "Dias da série diária, incluindo hoje (1 a 31)"
+        in: query
+        name: days
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 7
+          maximum: 31
+          minimum: 1
+      - description: "Fuso IANA que separa os dias, ex.: America/Sao_Paulo"
+        in: query
+        name: timeZone
+        required: false
+        schema:
+          type: string
+          default: UTC
+          pattern: "^(UTC|[A-Za-z_]{2,32}(/[A-Za-z0-9_+-]{1,32}){1,2})$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummaryResponse"
+          description: OK
+      summary: "Resumo dos pedidos: status, receita confirmada e pedidos por dia"
+      tags:
+      - Admin
+  /api/v1/inventory:
+    get:
+      description: Em ordem de SKU; envie o nextCursor da resposta no parâmetro cursor.
+      operationId: listStock
+      parameters:
+      - description: Itens por página (1 a 100)
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+          maximum: 100
+          minimum: 1
+      - description: nextCursor da página anterior
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockPageResponse"
+          description: OK
+      summary: Lista os produtos com preço e quantidades
+      tags:
+      - Inventory
+    post:
+      description: SKU já cadastrado responde 409.
+      operationId: registerProduct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterProductRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItemResponse"
+          description: Produto cadastrado
+      summary: Cadastra um produto
+      tags:
+      - Inventory
+  /api/v1/inventory/{sku}:
+    get:
+      operationId: getStock
+      parameters:
+      - in: path
+        name: sku
+        required: true
+        schema:
+          type: string
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItemResponse"
+          description: OK
+      summary: Preço e quantidades de um produto (com ETag)
+      tags:
+      - Inventory
+  /api/v1/inventory/{sku}/restock:
+    post:
+      description: "Exige If-Match com o ETag atual do produto: sem o header responde\
+        \ 428; se o produto mudou (inclusive por reservas de pedidos), 412. Assim\
+        \ um reenvio da mesma requisição não repõe o estoque duas vezes."
+      operationId: restock
+      parameters:
+      - in: path
+        name: sku
+        required: true
+        schema:
+          type: string
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+      - description: "ETag do produto, ex.: \"3\""
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestockRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItemResponse"
+          description: OK
+      summary: Repõe unidades livres de um produto
+      tags:
+      - Inventory
+  /api/v1/orders:
+    get:
+      description: "Do mais novo para o mais antigo, com paginação por cursor: envie\
+        \ o nextCursor da resposta no parâmetro cursor para obter a página seguinte."
+      operationId: listOrders
+      parameters:
+      - description: Filtra por status
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+          enum:
+          - CREATED
+          - STOCK_RESERVED
+          - CONFIRMED
+          - SHIPPED
+          - CANCELLED
+      - description: Itens por página (1 a 100)
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      - description: nextCursor da página anterior
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPageResponse"
+          description: OK
+      summary: Lista os pedidos do cliente
+      tags:
+      - Orders
+    post:
+      description: "Repetir a requisição com a mesma Idempotency-Key devolve o pedido\
+        \ original (header Idempotency-Replayed: true); reutilizar a chave com outro\
+        \ conteúdo é 422."
+      operationId: placeOrder
+      parameters:
+      - description: "8 a 128 caracteres: letras, dígitos, '-' ou '_'"
+        in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          pattern: "^[A-Za-z0-9_-]{8,128}$"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceOrderRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+          description: "Pedido criado, ou o original numa repetição"
+      summary: Cria um pedido
+      tags:
+      - Orders
+  /api/v1/orders/{orderId}:
+    get:
+      operationId: getOrder
+      parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+          description: OK
+      summary: Detalhe de um pedido do cliente
+      tags:
+      - Orders
+  /api/v1/orders/{orderId}/cancel:
+    post:
+      operationId: cancelOrder
+      parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelOrderRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+          description: OK
+      summary: Cancela um pedido do próprio cliente (antes da confirmação)
+      tags:
+      - Orders
+  /api/v1/orders/{orderId}/ship:
+    post:
+      operationId: shipOrder
+      parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+          description: OK
+      summary: Marca um pedido confirmado como enviado (papel ADMIN)
+      tags:
+      - Orders
+components:
+  schemas:
+    AdminOrderPageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderSummary"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    AdminOrderResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+        order:
+          $ref: "#/components/schemas/OrderResponse"
+      required:
+      - customerId
+      - order
+    AdminOrderSummary:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        customerId:
+          type: string
+        id:
+          type: string
+          format: uuid
+        itemCount:
+          type: integer
+          format: int32
+        status:
+          type: string
+          enum:
+          - CREATED
+          - STOCK_RESERVED
+          - CONFIRMED
+          - SHIPPED
+          - CANCELLED
+        total:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - currency
+      - customerId
+      - id
+      - itemCount
+      - status
+      - total
+      - updatedAt
+    CancelOrderRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+          minLength: 0
+    CatalogItem:
+      type: object
+      properties:
+        currency:
+          type: string
+        inStock:
+          type: boolean
+        name:
+          type: string
+        sku:
+          type: string
+        unitPrice:
+          type: number
+      required:
+      - currency
+      - inStock
+      - name
+      - sku
+      - unitPrice
+    CatalogPageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogItem"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    DailyOrders:
+      type: object
+      properties:
+        cancelled:
+          type: integer
+          format: int64
+        date:
+          type: string
+          format: date
+        orders:
+          type: integer
+          format: int64
+      required:
+      - cancelled
+      - date
+      - orders
+    DashboardSummaryResponse:
+      type: object
+      properties:
+        confirmedRevenue:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueByCurrency"
+        daily:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyOrders"
+        generatedAt:
+          type: string
+          format: date-time
+        ordersByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        timeZone:
+          type: string
+        totalOrders:
+          type: integer
+          format: int64
+      required:
+      - confirmedRevenue
+      - daily
+      - generatedAt
+      - ordersByStatus
+      - timeZone
+      - totalOrders
+    OrderItem:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+        sku:
+          type: string
+        total:
+          type: number
+        unitPrice:
+          type: number
+      required:
+      - quantity
+      - sku
+      - total
+      - unitPrice
+    OrderPageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSummary"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    OrderResponse:
+      type: object
+      properties:
+        cancellationReason:
+          type:
+          - string
+          - "null"
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        status:
+          type: string
+          enum:
+          - CREATED
+          - STOCK_RESERVED
+          - CONFIRMED
+          - SHIPPED
+          - CANCELLED
+        total:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - currency
+      - id
+      - items
+      - status
+      - total
+      - updatedAt
+    OrderSummary:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        id:
+          type: string
+          format: uuid
+        itemCount:
+          type: integer
+          format: int32
+        status:
+          type: string
+          enum:
+          - CREATED
+          - STOCK_RESERVED
+          - CONFIRMED
+          - SHIPPED
+          - CANCELLED
+        total:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - currency
+      - id
+      - itemCount
+      - status
+      - total
+      - updatedAt
+    PlaceOrderItem:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          example: 2
+          maximum: 1000
+          minimum: 1
+        sku:
+          type: string
+          example: SKU-001
+          minLength: 1
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+        unitPrice:
+          type: number
+          example: 49.9
+          maximum: 1000000.00
+          minimum: 0.01
+      required:
+      - quantity
+      - sku
+      - unitPrice
+    PlaceOrderRequest:
+      type: object
+      properties:
+        currency:
+          type: string
+          description: Código ISO 4217
+          example: BRL
+          minLength: 1
+          pattern: "^[A-Z]{3}$"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaceOrderItem"
+          maxItems: 50
+          minItems: 1
+      required:
+      - currency
+      - items
+    RegisterProductRequest:
+      type: object
+      properties:
+        currency:
+          type: string
+          description: Código ISO 4217
+          example: BRL
+          minLength: 1
+          pattern: "^[A-Z]{3}$"
+        initialQuantity:
+          type: integer
+          format: int32
+          example: 100
+          maximum: 1000000
+          minimum: 0
+        name:
+          type: string
+          example: Garrafa térmica
+          maxLength: 120
+          minLength: 0
+          pattern: "^\\P{Cc}*$"
+        sku:
+          type: string
+          example: SKU-006
+          minLength: 1
+          pattern: "^[A-Z0-9][A-Z0-9-]{2,31}$"
+        unitPrice:
+          type: number
+          example: 89.9
+          maximum: 1000000.00
+          minimum: 0.01
+      required:
+      - currency
+      - initialQuantity
+      - name
+      - sku
+      - unitPrice
+    RestockRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          description: Unidades a repor (1 a 100000)
+          example: 50
+          maximum: 100000
+          minimum: 1
+      required:
+      - quantity
+    RevenueByCurrency:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+      required:
+      - amount
+      - currency
+    StockItemResponse:
+      type: object
+      properties:
+        available:
+          type: integer
+          format: int32
+        currency:
+          type: string
+        name:
+          type: string
+        reserved:
+          type: integer
+          format: int32
+        sku:
+          type: string
+        unitPrice:
+          type: number
+        version:
+          type: integer
+          format: int64
+      required:
+      - available
+      - currency
+      - name
+      - reserved
+      - sku
+      - unitPrice
+      - version
+    StockPageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockItemResponse"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+  securitySchemes:
+    bearer-jwt:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http

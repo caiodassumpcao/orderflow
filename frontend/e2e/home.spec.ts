@@ -18,6 +18,17 @@ test.describe('home page', () => {
     await expectNoA11yViolations(page);
   });
 
+  test('explains when the login service is down and lets the user retry', async ({ page }) => {
+    await page.route('**/.well-known/openid-configuration', (route) => route.abort());
+
+    await page.getByRole('button', { name: 'Entrar' }).first().click();
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('Não foi possível conectar ao serviço de login');
+    await expect(alert.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+    await expectNoA11yViolations(page);
+  });
+
   test('lets keyboard users skip straight to the main content', async ({ page }) => {
     await page.keyboard.press('Tab');
     const skipLink = page.getByRole('link', { name: 'Pular para o conteúdo' });

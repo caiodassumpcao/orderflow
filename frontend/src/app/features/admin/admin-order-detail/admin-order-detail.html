@@ -2,9 +2,7 @@
 
 <h1>Pedido {{ id().slice(0, 8) }}</h1>
 
-@if (loading()) {
-  <mat-progress-bar mode="indeterminate" aria-label="Carregando o pedido" />
-}
+<of-loading-indicator [active]="loading()" label="Carregando o pedido" />
 <of-error-alert [error]="loadError()" />
 
 @if (detail(); as detail) {

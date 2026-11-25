@@ -12,6 +12,7 @@ import com.caiodassumpcao.orderflow.orders.domain.OrderStatus;
 import com.caiodassumpcao.orderflow.shared.security.Roles;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -43,7 +44,9 @@ class AdminOrderController {
 
   @GetMapping
   @PreAuthorize(Roles.HAS_ADMIN)
-  @Operation(summary = "Lista todos os pedidos, do mais novo para o mais antigo")
+  @Operation(
+      operationId = "listAllOrders",
+      summary = "Lista todos os pedidos, do mais novo para o mais antigo")
   AdminOrderPageResponse listOrders(
       @Parameter(description = "Filtra por status") @RequestParam(required = false)
           OrderStatus status,
@@ -70,20 +73,21 @@ class AdminOrderController {
 
   @GetMapping("/{orderId}")
   @PreAuthorize(Roles.HAS_ADMIN)
-  @Operation(summary = "Detalhe de qualquer pedido")
+  @Operation(operationId = "getAnyOrder", summary = "Detalhe de qualquer pedido")
   AdminOrderResponse getOrder(@PathVariable UUID orderId) {
     OrderDetail detail = queries.getAnyOrder(new OrderId(orderId));
     return new AdminOrderResponse(detail.summary().customerId().value(), OrderResponse.of(detail));
   }
 
   /** Página da listagem de administrador. */
-  record AdminOrderPageResponse(List<AdminOrderSummary> items, String nextCursor) {}
+  record AdminOrderPageResponse(
+      List<AdminOrderSummary> items, @Schema(types = {"string", "null"}) String nextCursor) {}
 
   /** Linha da listagem de administrador. */
   record AdminOrderSummary(
       UUID id,
       String customerId,
-      String status,
+      @Schema(implementation = OrderStatus.class) String status,
       String currency,
       BigDecimal total,
       int itemCount,

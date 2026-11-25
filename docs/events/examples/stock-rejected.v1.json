@@ -1,0 +1,14 @@
+{
+  "eventId": "01a20f13-6c22-7d3f-9a1b-6e3d0f8c5b22",
+  "type": "StockRejected",
+  "version": 1,
+  "aggregateId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+  "aggregateVersion": 0,
+  "occurredAt": "2026-11-24T19:20:31.890Z",
+  "correlationId": "4f1c2b7e-8a43-4d0e-9a51-2b9e6f0c1d77",
+  "payload": {
+    "orderId": "01a20f13-6a05-73f7-9b74-d102e42e88ab",
+    "reason": "OUT_OF_STOCK",
+    "skus": ["SKU-002"]
+  }
+}

@@ -95,6 +95,81 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  # Fluxos críticos sem nada simulado: login no Keycloak, API com Postgres e Kafka (saga e projeção)
+  # e a imagem nginx de produção servindo a SPA. Os e2e do job anterior simulam IdP e API.
+  e2e-stack:
+    name: E2E na stack real (Keycloak, API, Kafka)
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Gerar .env com senhas aleatórias
+        run: |
+          cp .env.example .env
+          for var in POSTGRES_PASSWORD KEYCLOAK_ADMIN_PASSWORD ORDERFLOW_DEV_USER_PASSWORD ORDERFLOW_DEV_ADMIN_PASSWORD; do
+            value="$(openssl rand -hex 16)"
+            echo "::add-mask::$value"
+            sed -i "s|^${var}=.*|${var}=${value}|" .env
+          done
+      - name: Subir Postgres, Kafka e Keycloak
+        run: docker compose --env-file .env -f infra/docker-compose.yml up -d --wait postgres kafka keycloak
+      - name: Empacotar a API
+        working-directory: backend
+        run: ./mvnw -B -ntp -q package -DskipTests
+      - name: Subir a API (perfil dev, com o estoque de demonstração)
+        run: |
+          set -a; . ./.env; set +a
+          nohup java -jar backend/target/orderflow-*.jar --spring.profiles.active=dev > api.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/actuator/health/readiness > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          tail -n 100 api.log
+          exit 1
+      - name: Subir a SPA (imagem nginx de produção)
+        run: |
+          docker build -t orderflow-web:e2e frontend
+          docker run -d --name orderflow-web -p 127.0.0.1:4200:8080 orderflow-web:e2e
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:4200/healthz > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - run: npm ci --no-audit
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run e2e:stack
+        working-directory: frontend
+      - name: Logs e relatório do Playwright
+        if: ${{ failure() }}
+        run: |
+          mkdir -p e2e-stack-logs
+          cp api.log e2e-stack-logs/ || true
+          docker compose --env-file .env -f infra/docker-compose.yml logs --no-color > e2e-stack-logs/infra.log || true
+          docker logs orderflow-web > e2e-stack-logs/web.log 2>&1 || true
+      - if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-stack-report
+          path: |
+            frontend/playwright-report-stack/
+            e2e-stack-logs/
+          retention-days: 7
+
   images:
     name: Imagem ${{ matrix.image }} (build + Trivy)
     needs: [backend, frontend]
