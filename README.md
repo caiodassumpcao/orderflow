@@ -316,7 +316,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
   - Projector tolerante a eventos repetidos e fora de ordem (via `aggregateVersion`), com teste dedicado; consultas restritas ao dono.
   - Índices além do da paginação keyset ficam para o estudo da Fase 8.
-- [ ] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
+- [x] **Fase 4 — Inventário e saga:** reserva/rejeição/liberação de estoque
   - Saga coreografada entre pedidos e inventário; o inventário é a fonte de verdade do preço e recusa pedidos com preço ou moeda diferentes do catálogo ([ADR-0008](docs/adr/0008-stock-saga-and-catalog-price.md)).
   - Ainda não há endpoint para cadastrar produtos ou repor estoque (em dev há um estoque de demonstração); entra com as telas de administração (Fase 6), protegido pelo RBAC da Fase 5.
 - [ ] **Fase 5 — Segurança:** Keycloak, RBAC, headers, rate limit, scans no CI
