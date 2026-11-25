@@ -306,7 +306,7 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [x] **Fase 1 — Domínio de pedidos (escrita):** agregado, comandos, outbox, migrations, testes de domínio
   - Endpoints de escrita incluídos nesta fase (criar, cancelar, enviar), com idempotência e Problem Details.
   - Simplificação conhecida: o preço unitário vem na requisição; ver Fase 4.
-- [ ] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
+- [x] **Fase 2 — Mensageria:** relay Kafka, tópicos, consumers idempotentes, retry/DLQ
   - Entrega a infraestrutura (relay, tópicos, idempotência, retry/DLQ, métricas) validada com um consumer de teste; os primeiros consumers reais são o projector (Fase 3) e o inventário (Fase 4).
 - [ ] **Fase 3 — CQRS (leitura):** projeções, endpoints de consulta, paginação keyset
   - O projector precisa tolerar eventos fora de ordem (ADR-0007), com teste dedicado.
