@@ -21,7 +21,7 @@ class StockReservationTest {
   private static final Sku B = new Sku("SKU-B01");
 
   private static StockItem item(Sku sku, String price, int available) {
-    return new StockItem(sku, BRL, new BigDecimal(price), available, 0, 0);
+    return new StockItem(sku, "Product " + sku, BRL, new BigDecimal(price), available, 0, 0);
   }
 
   private static ReservationLine line(Sku sku, int quantity, String price) {
@@ -225,9 +225,9 @@ class StockReservationTest {
 
     @Test
     void validatesItsState() {
-      assertThatThrownBy(() -> new StockItem(A, BRL, BigDecimal.ZERO, 1, 0, 0))
+      assertThatThrownBy(() -> new StockItem(A, "Product A", BRL, BigDecimal.ZERO, 1, 0, 0))
           .isInstanceOf(IllegalArgumentException.class);
-      assertThatThrownBy(() -> new StockItem(A, BRL, BigDecimal.ONE, -1, 0, 0))
+      assertThatThrownBy(() -> new StockItem(A, "Product A", BRL, BigDecimal.ONE, -1, 0, 0))
           .isInstanceOf(IllegalArgumentException.class);
       assertThatThrownBy(() -> new Sku("bad sku")).isInstanceOf(IllegalArgumentException.class);
       assertThatThrownBy(() -> line(A, 0, "1")).isInstanceOf(IllegalArgumentException.class);
@@ -237,7 +237,7 @@ class StockReservationTest {
 
     @Test
     void exposesCatalogData() {
-      StockItem item = new StockItem(A, BRL, new BigDecimal("10"), 4, 1, 7);
+      StockItem item = new StockItem(A, "Product A", BRL, new BigDecimal("10"), 4, 1, 7);
 
       assertThat(item.unitPrice()).isEqualByComparingTo("10.00");
       assertThat(item.currency()).isEqualTo(BRL);

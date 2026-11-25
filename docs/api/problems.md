@@ -62,6 +62,22 @@ Corrija os campos e reenvie.
 
 **404.** O produto consultado não existe no catálogo do inventário.
 
+## stock-item-already-exists
+
+**409.** Já existe produto cadastrado com o SKU informado. Escolha outro SKU ou reponha o estoque do produto existente.
+
+## stock-item-modified
+
+**412.** O `If-Match` não corresponde à versão atual do produto: ele mudou desde a última leitura (outra reposição ou reservas de pedidos), ou a mesma reposição já foi aplicada. A resposta traz o `ETag` atual; releia o produto, confira as quantidades e reenvie com o novo `ETag` se a reposição ainda fizer sentido. Só um ETag forte de uma resposta anterior é aceito (`*` e ETags fracos não).
+
+## precondition-required
+
+**428.** A operação exige o header `If-Match` com o `ETag` atual do recurso (reposição de estoque). Leia o produto, use o `ETag` da resposta e reenvie.
+
+## stock-limit-exceeded
+
+**422.** A reposição deixaria o produto com mais de 1.000.000.000 unidades livres.
+
 ## concurrent-modification
 
 **409.** Outra requisição alterou o pedido ao mesmo tempo (conflito de versão). Releia o estado e repita a operação se ainda fizer sentido.

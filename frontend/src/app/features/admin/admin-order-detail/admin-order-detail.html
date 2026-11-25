@@ -1,0 +1,27 @@
+<p><a routerLink="/admin/pedidos">← Todos os pedidos</a></p>
+
+<h1>Pedido {{ id().slice(0, 8) }}</h1>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando o pedido" />
+}
+<of-error-alert [error]="loadError()" />
+
+@if (detail(); as detail) {
+  <p>
+    Cliente: <strong>{{ detail.customerId }}</strong>
+  </p>
+
+  <of-order-details [order]="detail.order" />
+
+  <of-error-alert [error]="actionError()" />
+
+  <div class="actions">
+    @if (detail.order.status === 'CONFIRMED') {
+      <button mat-flat-button type="button" [disabled]="shipping()" (click)="ship()">
+        Marcar como enviado
+      </button>
+    }
+    <button mat-button type="button" [disabled]="loading()" (click)="load()">Atualizar</button>
+  </div>
+}

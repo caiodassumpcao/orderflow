@@ -1,0 +1,90 @@
+<div class="page-header">
+  <h1>Painel da operação</h1>
+  <button mat-stroked-button type="button" [disabled]="loading()" (click)="refresh()">
+    Atualizar
+  </button>
+</div>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando o painel" />
+}
+<of-error-alert [error]="error()" />
+
+@if (summary(); as summary) {
+  <p class="muted">
+    Atualizado em {{ summary.generatedAt | date: 'short' }} · dias no fuso {{ summary.timeZone }}.
+    Os números refletem o modelo de leitura e podem ter alguns segundos de atraso.
+  </p>
+
+  <ul class="cards" aria-label="Indicadores">
+    <li>
+      <span class="label">Pedidos</span>
+      <span class="value">{{ summary.totalOrders | number }}</span>
+    </li>
+    <li>
+      <span class="label">Receita confirmada</span>
+      @for (revenue of summary.confirmedRevenue; track revenue.currency) {
+        <span class="value">{{ revenue.amount | currency: revenue.currency }}</span>
+      } @empty {
+        <span class="value">{{ 0 | currency }}</span>
+      }
+    </li>
+    <li>
+      <span class="label">Aguardando estoque</span>
+      <span class="value">{{ awaitingStock() | number }}</span>
+    </li>
+    <li>
+      <span class="label">Prontos para envio</span>
+      <span class="value">{{ summary.ordersByStatus.CONFIRMED | number }}</span>
+      <a routerLink="/admin/pedidos">Ver pedidos</a>
+    </li>
+  </ul>
+
+  <div class="panels">
+    <section aria-labelledby="by-status">
+      <h2 id="by-status">Pedidos por status</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Status</th>
+            <th scope="col" class="numeric">Pedidos</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of statusRows(); track row.status) {
+            <tr>
+              <th scope="row">{{ statusLabels[row.status] }}</th>
+              <td class="numeric">{{ row.count | number }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section aria-labelledby="by-day">
+      <h2 id="by-day">Pedidos nos últimos {{ days }} dias</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Dia</th>
+            <th scope="col" class="numeric">Pedidos</th>
+            <th scope="col" class="numeric">Cancelados</th>
+            <th scope="col"><span class="visually-hidden">Gráfico</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (day of dailyRows(); track day.date) {
+            <tr>
+              <th scope="row">{{ day.date | date: 'EEE, dd/MM' : 'UTC' }}</th>
+              <td class="numeric">{{ day.orders | number }}</td>
+              <td class="numeric">{{ day.cancelled | number }}</td>
+              <td class="bar-cell" aria-hidden="true">
+                <span class="bar" [style.width.%]="day.percent"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+}

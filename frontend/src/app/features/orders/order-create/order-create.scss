@@ -1,0 +1,51 @@
+fieldset {
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--of-border);
+}
+
+.line-title {
+  flex-basis: 100%;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.product {
+  flex: 1 1 22rem;
+}
+
+.quantity {
+  flex: 0 1 9rem;
+}
+
+.subtotal {
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-error {
+  color: var(--of-error);
+  font-weight: 600;
+}
+
+.total {
+  font-size: 1.25rem;
+}

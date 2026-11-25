@@ -6,7 +6,7 @@
     "module": "CommonJS",
     "moduleResolution": "node10",
     "isolatedModules": true,
-    "types": ["jest"]
+    "types": ["jest", "@testing-library/jest-dom"]
   },
-  "include": ["setup-jest.ts", "src/**/*.d.ts", "src/**/*.spec.ts"]
+  "include": ["setup-jest.ts", "src/**/*.d.ts", "src/**/*.spec.ts", "src/testing/**/*.ts"]
 }

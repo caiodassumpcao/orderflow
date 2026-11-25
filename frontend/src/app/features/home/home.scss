@@ -1,3 +1,26 @@
 .lead {
   font-size: 1.25rem;
 }
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 1px solid var(--of-border);
+    border-radius: 0.5rem;
+  }
+
+  a {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+}

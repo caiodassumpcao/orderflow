@@ -1,0 +1,24 @@
+.name {
+  font-weight: 400;
+}
+
+.low {
+  color: var(--of-error);
+  font-weight: 600;
+}
+
+.low-label {
+  margin-left: 0.25rem;
+}
+
+.register {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0 1rem;
+  max-width: 48rem;
+}
+
+.wide,
+.full {
+  grid-column: 1 / -1;
+}

@@ -1,0 +1,39 @@
+<p><a routerLink="/pedidos">← Meus pedidos</a></p>
+
+<h1>Pedido {{ id().slice(0, 8) }}</h1>
+
+<!-- Anuncia as mudanças de status enquanto a saga de estoque acontece -->
+<p class="visually-hidden" role="status">{{ statusMessage() }}</p>
+
+@if (polling()) {
+  <mat-progress-bar
+    mode="indeterminate"
+    [attr.aria-label]="awaitingStock() ? 'Aguardando a reserva de estoque' : 'Carregando o pedido'"
+  />
+}
+
+<of-error-alert [error]="loadError()" />
+
+@if (order(); as order) {
+  @if (awaitingStock()) {
+    <p class="muted">
+      O estoque está sendo reservado; esta página se atualiza sozinha. Você pode cancelar o pedido
+      enquanto ele aguarda o estoque.
+    </p>
+  }
+
+  <of-order-details [order]="order" />
+
+  <of-error-alert [error]="actionError()" />
+
+  <div class="actions">
+    @if (order.status === 'CREATED') {
+      <button mat-stroked-button type="button" [disabled]="cancelling()" (click)="cancel()">
+        Cancelar pedido
+      </button>
+    }
+    @if (!polling()) {
+      <button mat-button type="button" (click)="refresh()">Atualizar</button>
+    }
+  </div>
+}

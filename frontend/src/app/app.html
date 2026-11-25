@@ -2,9 +2,64 @@
 
 <header class="app-header">
   <a class="brand" routerLink="/">{{ appName }}</a>
+
+  @if (auth.isAuthenticated()) {
+    <nav class="app-nav" aria-label="Principal">
+      <ul>
+        @if (auth.isCustomer()) {
+          <li>
+            <a
+              routerLink="/pedidos"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Meus pedidos</a
+            >
+          </li>
+          <li>
+            <a routerLink="/pedidos/novo" routerLinkActive="active" ariaCurrentWhenActive="page"
+              >Novo pedido</a
+            >
+          </li>
+        }
+        @if (auth.isAdmin()) {
+          <li>
+            <a
+              routerLink="/admin"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Painel</a
+            >
+          </li>
+          <li>
+            <a routerLink="/admin/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page"
+              >Todos os pedidos</a
+            >
+          </li>
+          <li>
+            <a routerLink="/admin/estoque" routerLinkActive="active" ariaCurrentWhenActive="page"
+              >Estoque</a
+            >
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <div class="session">
+      @if (auth.displayName()) {
+        <span class="user-name">{{ auth.displayName() }}</span>
+      }
+      <button type="button" class="session-button outlined" (click)="auth.logout()">Sair</button>
+    </div>
+  } @else {
+    <div class="session">
+      <button type="button" class="session-button filled" (click)="auth.login()">Entrar</button>
+    </div>
+  }
 </header>
 
-<main id="conteudo" class="app-main" tabindex="-1">
+<main #main id="conteudo" class="app-main" tabindex="-1">
   <router-outlet />
 </main>
 

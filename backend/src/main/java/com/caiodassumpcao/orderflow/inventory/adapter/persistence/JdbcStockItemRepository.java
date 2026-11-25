@@ -21,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 class JdbcStockItemRepository implements StockItemRepository {
 
-  private static final String COLUMNS = "sku, currency, unit_price, available, reserved, version";
+  private static final String COLUMNS =
+      "sku, name, currency, unit_price, available, reserved, version";
 
   private final JdbcClient jdbc;
 
@@ -36,6 +37,44 @@ class JdbcStockItemRepository implements StockItemRepository {
         .param("sku", sku.value())
         .query((rs, row) -> map(rs))
         .optional();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<StockItem> findPage(Optional<Sku> after, int limit) {
+    // Keyset pelo SKU (chave primária): cada página é uma busca no índice, sem OFFSET.
+    String sql =
+        "SELECT "
+            + COLUMNS
+            + " FROM command.stock_items"
+            + (after.isPresent() ? " WHERE sku > :after" : "")
+            + " ORDER BY sku LIMIT :limit";
+    JdbcClient.StatementSpec statement = jdbc.sql(sql).param("limit", limit);
+    if (after.isPresent()) {
+      statement = statement.param("after", after.get().value());
+    }
+    return statement.query((rs, row) -> map(rs)).list();
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public boolean add(StockItem item) {
+    return jdbc.sql(
+                """
+                INSERT INTO command.stock_items
+                       (sku, name, currency, unit_price, available, reserved, version)
+                VALUES (:sku, :name, :currency, :unitPrice, :available, :reserved, :version)
+                ON CONFLICT (sku) DO NOTHING
+                """)
+            .param("sku", item.sku().value())
+            .param("name", item.name())
+            .param("currency", item.currency().getCurrencyCode())
+            .param("unitPrice", item.unitPrice())
+            .param("available", item.available())
+            .param("reserved", item.reserved())
+            .param("version", item.version())
+            .update()
+        == 1;
   }
 
   @Override
@@ -83,6 +122,7 @@ class JdbcStockItemRepository implements StockItemRepository {
   private static StockItem map(ResultSet rs) throws SQLException {
     return new StockItem(
         new Sku(rs.getString("sku")),
+        rs.getString("name"),
         Currency.getInstance(rs.getString("currency")),
         rs.getBigDecimal("unit_price"),
         rs.getInt("available"),

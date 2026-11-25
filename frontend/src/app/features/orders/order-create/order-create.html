@@ -1,0 +1,111 @@
+<h1>Novo pedido</h1>
+<p class="muted">
+  Os preços são os do catálogo. Depois de criado, o pedido aguarda a reserva de estoque e é
+  confirmado ou cancelado automaticamente.
+</p>
+
+@if (catalogLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando o catálogo" />
+}
+<of-error-alert [error]="catalogError()" />
+
+@if (!catalogLoading() && !catalogError() && catalog().length === 0) {
+  <p>Não há produtos no catálogo no momento.</p>
+}
+
+@if (catalog().length > 0) {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <fieldset formArrayName="lines">
+      <legend>Itens do pedido</legend>
+
+      @for (line of lines.controls; track line; let i = $index) {
+        <div class="line" [formGroupName]="i" role="group" [attr.aria-labelledby]="'line-' + i">
+          <h2 class="line-title" [id]="'line-' + i">Item {{ i + 1 }}</h2>
+
+          <mat-form-field class="product">
+            <mat-label>Produto</mat-label>
+            <select matNativeControl formControlName="sku" [id]="'sku-' + i" required>
+              <option value="">Escolha um produto</option>
+              @for (product of catalog(); track product.sku) {
+                <option [value]="product.sku" [disabled]="!product.inStock">
+                  {{ product.name }} ({{ product.sku }}) —
+                  {{ product.unitPrice | currency: product.currency
+                  }}{{ product.inStock ? '' : ' — sem estoque' }}
+                </option>
+              }
+            </select>
+            @if (line.controls.sku.hasError('required')) {
+              <mat-error>Escolha um produto.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field class="quantity">
+            <mat-label>Quantidade</mat-label>
+            <input
+              matInput
+              type="number"
+              inputmode="numeric"
+              formControlName="quantity"
+              min="1"
+              [max]="maxQuantity"
+              required
+            />
+            @if (line.controls.quantity.invalid) {
+              <mat-error>Informe um número inteiro de 1 a {{ maxQuantity }}.</mat-error>
+            }
+          </mat-form-field>
+
+          <p class="subtotal">
+            <span class="muted">Subtotal</span>
+            {{ pricedLines()[i]?.subtotal ?? 0 | currency: currency() }}
+          </p>
+
+          <button
+            mat-button
+            type="button"
+            class="remove"
+            [disabled]="lines.length === 1"
+            (click)="removeLine(i)"
+          >
+            Remover <span class="visually-hidden">item {{ i + 1 }}</span>
+          </button>
+        </div>
+      }
+    </fieldset>
+
+    @if (submitted() && lines.hasError('duplicateProduct')) {
+      <p class="form-error" tabindex="-1" role="alert">
+        Cada produto só pode aparecer uma vez; ajuste a quantidade do item repetido.
+      </p>
+    }
+    @if (submitted() && lines.hasError('mixedCurrencies')) {
+      <p class="form-error" tabindex="-1" role="alert">
+        Todos os produtos do pedido precisam ter a mesma moeda.
+      </p>
+    }
+
+    <div class="actions">
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="lines.length >= maxLines"
+        (click)="addLine()"
+      >
+        Adicionar item
+      </button>
+    </div>
+
+    <p class="total" aria-live="polite">
+      Total do pedido: <strong>{{ total() | currency: currency() }}</strong>
+    </p>
+
+    <of-error-alert [error]="submitError()" />
+
+    <div class="actions">
+      <button mat-flat-button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Enviando…' : 'Criar pedido' }}
+      </button>
+      <a mat-button routerLink="/pedidos">Cancelar</a>
+    </div>
+  </form>
+}

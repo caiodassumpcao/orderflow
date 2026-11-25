@@ -1,5 +1,6 @@
 package com.caiodassumpcao.orderflow.inventory.adapter.config;
 
+import com.caiodassumpcao.orderflow.inventory.application.InventoryCommandService;
 import com.caiodassumpcao.orderflow.inventory.application.InventoryQueryService;
 import com.caiodassumpcao.orderflow.inventory.application.StockReservationService;
 import com.caiodassumpcao.orderflow.inventory.application.port.InventoryEventOutbox;
@@ -27,5 +28,11 @@ public class InventoryConfiguration {
   @Bean
   InventoryQueryService inventoryQueryService(StockItemRepository stockItems) {
     return new InventoryQueryService(stockItems);
+  }
+
+  @Bean
+  InventoryCommandService inventoryCommandService(
+      StockItemRepository stockItems, InventoryUnitOfWork unitOfWork) {
+    return new InventoryCommandService(stockItems, unitOfWork);
   }
 }

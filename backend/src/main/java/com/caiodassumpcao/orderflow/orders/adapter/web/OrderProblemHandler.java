@@ -79,6 +79,19 @@ class OrderProblemHandler {
   @ExceptionHandler(PageCursorCodec.InvalidCursorException.class)
   ResponseEntity<ProblemDetail> invalidCursor(
       PageCursorCodec.InvalidCursorException ex, HttpServletRequest request) {
+    return invalidField(
+        "cursor", "must be a nextCursor value returned by a previous page", request);
+  }
+
+  @ExceptionHandler(DashboardController.InvalidTimeZoneException.class)
+  ResponseEntity<ProblemDetail> invalidTimeZone(
+      DashboardController.InvalidTimeZoneException ex, HttpServletRequest request) {
+    return invalidField("timeZone", "must be an IANA time zone", request);
+  }
+
+  /** Mesmo formato do erro de Bean Validation, para um único campo. */
+  private static ResponseEntity<ProblemDetail> invalidField(
+      String field, String message, HttpServletRequest request) {
     ResponseEntity<ProblemDetail> response =
         Problems.response(
             HttpStatus.BAD_REQUEST,
@@ -88,12 +101,7 @@ class OrderProblemHandler {
             request);
     ProblemDetail body = response.getBody();
     if (body != null) {
-      body.setProperty(
-          "errors",
-          List.of(
-              Map.of(
-                  "field", "cursor",
-                  "message", "must be a nextCursor value returned by a previous page")));
+      body.setProperty("errors", List.of(Map.of("field", field, "message", message)));
     }
     return response;
   }

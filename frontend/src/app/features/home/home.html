@@ -1,3 +1,34 @@
 <h1>OrderFlow</h1>
 <p class="lead">Gestão de pedidos orientada a eventos.</p>
-<p>As telas de pedidos, estoque e dashboard chegam nas próximas fases do projeto.</p>
+
+@if (auth.isAuthenticated()) {
+  <p>Olá{{ auth.displayName() ? ', ' + auth.displayName() : '' }}! O que você quer fazer agora?</p>
+  <ul class="shortcuts">
+    @if (auth.isCustomer()) {
+      <li>
+        <a routerLink="/pedidos/novo">Fazer um pedido</a>
+        <span class="muted">Escolha produtos do catálogo com o preço atual.</span>
+      </li>
+      <li>
+        <a routerLink="/pedidos">Acompanhar meus pedidos</a>
+        <span class="muted">Status de cada pedido, da reserva de estoque ao envio.</span>
+      </li>
+    }
+    @if (auth.isAdmin()) {
+      <li>
+        <a routerLink="/admin">Painel da operação</a>
+        <span class="muted">Pedidos por status, receita confirmada e pedidos por dia.</span>
+      </li>
+      <li>
+        <a routerLink="/admin/estoque">Estoque</a>
+        <span class="muted">Cadastro de produtos e reposição.</span>
+      </li>
+    }
+  </ul>
+} @else {
+  <p>
+    Crie pedidos, acompanhe a reserva de estoque em tempo real e, na operação, envie pedidos e
+    reponha o estoque. Entre com sua conta para começar.
+  </p>
+  <button mat-flat-button type="button" (click)="auth.login()">Entrar</button>
+}

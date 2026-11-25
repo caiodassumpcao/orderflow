@@ -1,0 +1,7 @@
+{
+  "apiUrl": "http://localhost:8080",
+  "oidc": {
+    "authority": "http://localhost:8180/realms/orderflow",
+    "clientId": "orderflow-spa"
+  }
+}
