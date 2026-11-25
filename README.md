@@ -360,6 +360,8 @@ Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [ ] **Fase 7 — Qualidade:** e2e, acessibilidade, cobertura, contract tests
   - E2E contra a stack real (Keycloak, API, Kafka) no CI, além dos e2e com IdP e API falsos.
   - Mensagem na tela quando o provedor OIDC estiver fora do ar (hoje o botão Entrar só registra o erro no console).
+- [ ] **Fase 7.1 — Design e UX:** revisão visual da plataforma (cabeçalho e navegação, espaçamentos, cards, tabelas, telas de pedido e de operação), mantendo WCAG 2.2 AA e os e2e/axe verdes
+  - O indicador de carregamento já foi corrigido na Fase 7 (espaço fixo, sem piscar em respostas rápidas e texto estático com movimento reduzido).
 - [ ] **Fase 8 — Performance SQL:** massa de dados, índices, `docs/db/performance.md`
   - Definir retenção e limpeza de `command.idempotency_keys` e das linhas já publicadas de `command.outbox`.
   - O dashboard agrega `query.order_summaries` a cada requisição; medir e, se preciso, trocar por uma projeção agregada.
