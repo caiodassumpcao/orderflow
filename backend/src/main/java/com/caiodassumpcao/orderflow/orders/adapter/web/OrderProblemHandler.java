@@ -8,6 +8,8 @@ import com.caiodassumpcao.orderflow.orders.domain.IllegalOrderStateException;
 import com.caiodassumpcao.orderflow.orders.domain.InvalidOrderException;
 import com.caiodassumpcao.orderflow.shared.error.Problems;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -72,5 +74,27 @@ class OrderProblemHandler {
         "Concurrent modification",
         "The order was changed by another request. Retry the operation.",
         request);
+  }
+
+  @ExceptionHandler(PageCursorCodec.InvalidCursorException.class)
+  ResponseEntity<ProblemDetail> invalidCursor(
+      PageCursorCodec.InvalidCursorException ex, HttpServletRequest request) {
+    ResponseEntity<ProblemDetail> response =
+        Problems.response(
+            HttpStatus.BAD_REQUEST,
+            "validation-error",
+            "Invalid request",
+            "One or more fields are invalid.",
+            request);
+    ProblemDetail body = response.getBody();
+    if (body != null) {
+      body.setProperty(
+          "errors",
+          List.of(
+              Map.of(
+                  "field", "cursor",
+                  "message", "must be a nextCursor value returned by a previous page")));
+    }
+    return response;
   }
 }
